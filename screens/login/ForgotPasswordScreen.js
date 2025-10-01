@@ -22,8 +22,8 @@ const isDesktop = width >= 1024;
 const isMobile = width < 768;
 
 const BASE_URL = Platform.OS === 'android' 
-  ? 'https://barber-server-6kuo.onrender.com'
-  : 'https://barber-server-6kuo.onrender.com';
+  ? 'https://vianney-server.onrender.com'
+  : 'https://vianney-server.onrender.com';
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -183,7 +183,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
         return (
           <View style={styles.pasoContainer}>
             <Image 
-              source={require('../../assets/images/newYorkBarber.jpeg')} 
+              source={require('../../assets/images/vianney.png')} 
               style={styles.logo}
               resizeMode="contain"
             />
@@ -228,7 +228,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
         return (
           <View style={styles.pasoContainer}>
             <Image 
-              source={require('../../assets/images/newYorkBarber.jpeg')} 
+              source={require('../../assets/images/vianney.png')} 
               style={styles.logo}
               resizeMode="contain"
             />
@@ -280,7 +280,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
         return (
           <View style={styles.pasoContainer}>
             <Image 
-              source={require('../../assets/images/newYorkBarber.jpeg')} 
+              source={require('../../assets/images/vianney.png')} 
               style={styles.logo}
               resizeMode="contain"
             />

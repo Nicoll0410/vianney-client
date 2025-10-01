@@ -47,8 +47,8 @@ const months = [
 ];
 
 const BASE_URL = Platform.OS === 'android'
-  ? 'https://barber-server-6kuo.onrender.com'
-  : 'https://barber-server-6kuo.onrender.com';
+  ? 'https://vianney-server.onrender.com'
+  : 'https://vianney-server.onrender.com';
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
@@ -263,7 +263,7 @@ const RegisterScreen = () => {
         {/* Logo y título */}
         <View style={styles.header}>
           <Image 
-            source={require('../../assets/images/newYorkBarber.jpeg')} 
+            source={require('../../assets/images/vianney.png')} 
             style={styles.logo} 
             resizeMode="contain"
           />

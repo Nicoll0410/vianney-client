@@ -32,7 +32,7 @@
     "web": {
       "output": "web-build",
       "bundler": "webpack",
-      "favicon": "./assets/favicon-96x96.png"
+      "favicon": "./assets/favicon-32x32.png"
     },
     "plugins": []
   }

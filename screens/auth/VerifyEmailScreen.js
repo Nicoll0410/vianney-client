@@ -16,8 +16,8 @@ import axios from 'axios';
 import InfoModal from '../../components/InfoModal';
 
 const BASE_URL = Platform.OS === 'android'
-  ? 'https://barber-server-6kuo.onrender.com'
-  : 'https://barber-server-6kuo.onrender.com';
+  ? 'https://vianney-server.onrender.com'
+  : 'https://vianney-server.onrender.com';
 
 const VerifyEmailScreen = () => {
   const navigation = useNavigation();
@@ -140,7 +140,7 @@ const VerifyEmailScreen = () => {
       >
         <View style={styles.content}>
           <Image 
-            source={require('../../assets/images/newYorkBarber.jpeg')}
+            source={require('../../assets/images/vianney.png')}
             style={styles.logo}
             resizeMode="contain"
           />

@@ -5,7 +5,8 @@ import {
   StyleSheet, 
   Dimensions, 
   Platform,
-  ScrollView 
+  ScrollView,
+  Text 
 } from 'react-native';
 import LoginForm from './LoginForm';
 import Footer from '../../components/Footer';
@@ -24,8 +25,12 @@ const LoginScreen = () => {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.mobileContent}>
+              {/* Título para móvil */}
+              <View style={styles.titleContainerMobile}>
+                <Text style={styles.title}>VIANNEY THE BARBER</Text>
+              </View>
               <Image 
-                source={require('../../assets/images/newYorkBarber.jpeg')} 
+                source={require('../../assets/images/vianney.png')} 
                 style={styles.logo} 
                 resizeMode="contain"
               />
@@ -41,8 +46,12 @@ const LoginScreen = () => {
         <View style={styles.desktopContainer}>
           <View style={styles.desktopContent}>
             <View style={styles.logoContainer}>
+              {/* Título para desktop */}
+              <View style={styles.titleContainerDesktop}>
+                <Text style={styles.title}>VIANNEY THE BARBER</Text>
+              </View>
               <Image 
-                source={require('../../assets/images/newYorkBarber.jpeg')} 
+                source={require('../../assets/images/vianney.png')} 
                 style={styles.logo} 
                 resizeMode="contain"
               />
@@ -101,6 +110,7 @@ const styles = StyleSheet.create({
     marginRight: isDesktop ? 120 : 80,
     marginLeft: isDesktop ? 80 : 40,
     width: isDesktop ? 300 : 200,
+    alignItems: 'center',
   },
   logo: {
     width: '100%',
@@ -112,6 +122,24 @@ const styles = StyleSheet.create({
     maxWidth: 1200,
     paddingBottom: 40,
     alignSelf: 'center',
+  },
+  // Nuevos estilos para el título
+  titleContainerMobile: {
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  titleContainerDesktop: {
+    marginBottom: 30,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: isDesktop ? 28 : isMobile ? 22 : 24,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+    color: '#000',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'Helvetica Neue' : 'sans-serif',
+    textTransform: 'uppercase',
   }
 });
 

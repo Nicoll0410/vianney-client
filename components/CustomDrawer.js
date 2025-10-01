@@ -25,10 +25,10 @@ const ROLE_MENU = {
       Usuarios: [
         { label: "Clientes", screen: "Clientes", icon: Feather, name: "user" },
       ],
-      // Compras: [
-      //   // { label: "Insumos", screen: "Insumos", icon: MaterialCommunityIcons, name: "spray" },
-      //   { label: "Movimientos", screen: "Movimientos", icon: FontAwesome5, name: "exchange-alt" },
-      // ],
+      Compras: [
+        // { label: "Insumos", screen: "Insumos", icon: MaterialCommunityIcons, name: "spray" },
+        { label: "Movimientos", screen: "Movimientos", icon: FontAwesome5, name: "exchange-alt" },
+      ],
       Ventas: [
         { label: "Agenda", screen: "Agenda", icon: MaterialIcons, name: "event" },
         { label: "Citas", screen: "Citas", icon: Ionicons, name: "calendar-outline" },
@@ -43,16 +43,16 @@ const ROLE_MENU = {
       Usuarios: [
         { label: "Clientes", screen: "Clientes", icon: Feather, name: "user" },
         { label: "Barberos", screen: "Barberos", icon: Ionicons, name: "cut-outline" },
-        // { label: "Roles", screen: "Roles", icon: Ionicons, name: "key-outline" },
+        { label: "Roles", screen: "Roles", icon: Ionicons, name: "key-outline" },
       ],
-      // Compras: [
-      //   { label: "Categoría de Insumos", screen: "CategoriaInsumos", icon: MaterialCommunityIcons, name: "database-arrow-left-outline" },
-      //   { label: "Insumos", screen: "Insumos", icon: MaterialCommunityIcons, name: "spray" },
-      //   { label: "Proveedores", screen: "Proveedores", icon: MaterialCommunityIcons, name: "toolbox-outline" },
-      //   { label: "Compras", screen: "Compras", icon: AntDesign, name: "shoppingcart" },
-      // ],
+      Compras: [
+        { label: "Categoría de Insumos", screen: "CategoriaInsumos", icon: MaterialCommunityIcons, name: "database-arrow-left-outline" },
+        { label: "Insumos", screen: "Insumos", icon: MaterialCommunityIcons, name: "spray" },
+        { label: "Proveedores", screen: "Proveedores", icon: MaterialCommunityIcons, name: "toolbox-outline" },
+        { label: "Compras", screen: "Compras", icon: AntDesign, name: "shoppingcart" },
+      ],
       Ventas: [
-        // { label: "Movimientos", screen: "Movimientos", icon: FontAwesome5, name: "exchange-alt" },
+        { label: "Movimientos", screen: "Movimientos", icon: FontAwesome5, name: "exchange-alt" },
         { label: "Servicios", screen: "Servicios", icon: MaterialCommunityIcons, name: "toolbox-outline" },
         { label: "Agenda", screen: "Agenda", icon: MaterialIcons, name: "event" },
         { label: "Citas", screen: "Citas", icon: Ionicons, name: "calendar-outline" },
@@ -97,7 +97,7 @@ const Item = ({ label, screen, icon: IconComp, name, indent = 0 }) => (
     <View style={styles.container}>
       {/* ----------- Logo superior ------------ */}
       <View style={styles.logoContainer}>
-        <Image source={require("../assets/images/newYorkBarber.jpeg")} style={styles.logo} />
+        <Image source={require("../assets/images/vianney.jpg")} style={styles.logo} />
         {/* Título agregado debajo del logo */}
         <Text style={styles.logoTitle}>New York Barber</Text>
       </View>
