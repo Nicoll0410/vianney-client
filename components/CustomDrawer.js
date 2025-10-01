@@ -99,7 +99,7 @@ const Item = ({ label, screen, icon: IconComp, name, indent = 0 }) => (
       <View style={styles.logoContainer}>
         <Image source={require("../assets/images/vianney.jpg")} style={styles.logo} />
         {/* Título agregado debajo del logo */}
-        <Text style={styles.logoTitle}>New York Barber</Text>
+        <Text style={styles.logoTitle}>Vianney The Barber</Text>
       </View>
 
       <ScrollView

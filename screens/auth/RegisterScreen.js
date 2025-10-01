@@ -268,7 +268,7 @@ const RegisterScreen = () => {
             resizeMode="contain"
           />
           <View style={styles.headerText}>
-            <Text style={styles.title}>Únete a New York Barber</Text>
+            <Text style={styles.title}>Únete a Vianney The Barber</Text>
             <Text style={styles.subtitle}>
               Crea tu cuenta para reservar citas y disfrutar de nuestros servicios
             </Text>
