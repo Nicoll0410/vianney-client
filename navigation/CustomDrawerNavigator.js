@@ -195,6 +195,14 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
               })}
             />
             <Stack.Screen 
+              name="Movimientos" 
+              component={MovimientosScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Movimientos"
+              })}
+            />
+            <Stack.Screen 
               name="Agenda" 
               component={AgendaScreen}
               options={({ navigation }) => ({
@@ -218,6 +226,7 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
           </>
         );
 
+      case "Administrador":
       default:
         return (
           <>
@@ -246,6 +255,62 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
               })}
             />
             <Stack.Screen 
+              name="Roles" 
+              component={RolesScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Roles"
+              })}
+            />
+            <Stack.Screen 
+              name="CategoriaInsumos" 
+              component={CategoriaInsumosScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Categoría de Insumos"
+              })}
+            />
+            <Stack.Screen 
+              name="Insumos" 
+              component={InsumosScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Insumos"
+              })}
+            />
+            <Stack.Screen 
+              name="Proveedores" 
+              component={ProveedoresScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Proveedores"
+              })}
+            />
+            <Stack.Screen 
+              name="Compras" 
+              component={ComprasScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Compras"
+              })}
+            />
+            <Stack.Screen 
+              name="Movimientos" 
+              component={MovimientosScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Movimientos"
+              })}
+            />
+            <Stack.Screen 
+              name="Servicios" 
+              component={ServiciosScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Servicios"
+              })}
+            />
+            <Stack.Screen 
               name="Agenda" 
               component={AgendaScreen}
               options={({ navigation }) => ({
@@ -267,14 +332,6 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
               })}
             />
             <Stack.Screen 
-              name="Servicios" 
-              component={ServiciosScreen}
-              options={({ navigation }) => ({
-                ...commonOptions({ navigation }),
-                headerTitle: "Servicios"
-              })}
-            />
-            <Stack.Screen 
               name="Ventas" 
               component={VentasScreen}
               options={({ navigation }) => ({
@@ -288,6 +345,14 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Notificaciones"
+              })}
+            />
+            <Stack.Screen 
+              name="ControlInsumos" 
+              component={ControlInsumos}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Control de Insumos"
               })}
             />
           </>
