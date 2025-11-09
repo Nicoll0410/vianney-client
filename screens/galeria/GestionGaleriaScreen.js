@@ -1,6 +1,6 @@
 /* =========================================================
    screens/galeria/GestionGaleriaScreen.js
-   VERSIÓN FINAL - SIN LÍMITES DE TAMAÑO
+   VERSIÓN FINAL - Sin límites de tamaño
    ========================================================= */
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -101,7 +101,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
     setSelectedItem(null);
   };
 
-  // FUNCIÓN SIN LÍMITES - Eliminar todas las validaciones de tamaño
+  // FUNCIÓN SIN LÍMITES
   const seleccionarImagen = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -114,7 +114,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.8, // ✅ Calidad normal - SIN compresión extrema
+        quality: 0.8,
         base64: true,
       });
 
@@ -124,13 +124,11 @@ const GestionGaleriaScreen = ({ navigation }) => {
         if (asset.base64) {
           const base64Image = `data:image/jpeg;base64,${asset.base64}`;
           
-          console.log("📊 DEBUG - Imagen seleccionada SIN LÍMITES:");
+          console.log("📊 Imagen seleccionada:");
           console.log("Longitud base64:", base64Image.length);
           console.log("Tamaño aproximado:", Math.round(base64Image.length * 0.75) / 1000, "KB");
           
-          // ✅ ELIMINAR COMPLETAMENTE la validación de tamaño
-          // NO HAY MÁS LÍMITES - la base de datos acepta LONGTEXT (4GB)
-          
+          // ✅ SIN VALIDACIÓN DE TAMAÑO
           setArchivoSeleccionado(base64Image);
           setVistaPreviaUri(asset.uri);
           setTipo("imagen");
@@ -158,21 +156,17 @@ const GestionGaleriaScreen = ({ navigation }) => {
         mediaTypes: ImagePicker.MediaTypeOptions.Videos,
         allowsEditing: true,
         quality: 0.8,
-        videoMaxDuration: 120, // 2 minutos máximo
+        videoMaxDuration: 120,
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
         
-        // Para videos, usar URI directa
         setArchivoSeleccionado(asset.uri);
         setVistaPreviaUri(asset.uri);
         setTipo("video");
         
-        showInfoModal(
-          "Video seleccionado 🎥", 
-          "El video está listo para subir."
-        );
+        showInfoModal("Video seleccionado 🎥", "El video está listo para subir.");
       }
     } catch (error) {
       console.error("Error al seleccionar video:", error);
@@ -198,7 +192,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
   };
 
   const handleSubmit = async () => {
-    // Validaciones básicas
     if (!titulo.trim()) {
       showInfoModal("Error ❌", "El título es obligatorio");
       return;
@@ -223,10 +216,8 @@ const GestionGaleriaScreen = ({ navigation }) => {
         activo,
       };
 
-      // ✅ DEBUG: Ver qué se envía (pero SIN validar tamaño)
-      console.log("📤 DEBUG - Enviando datos SIN LÍMITES:");
+      console.log("📤 Enviando datos:");
       console.log("URL length:", data.url.length);
-      console.log("Tamaño total:", Math.round(data.url.length * 0.75) / 1000, "KB");
 
       if (isEditing) {
         await axios.put(
@@ -254,11 +245,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
       
       if (error.response) {
         mensajeError = error.response.data?.mensaje || mensajeError;
-        
-        // Si aún hay error de caracteres, es problema del backend
-        if (error.response.data?.mensaje?.includes('caracteres')) {
-          mensajeError = `ERROR DEL SERVIDOR: ${error.response.data.mensaje}. Contacta al administrador.`;
-        }
       } else if (error.request) {
         mensajeError = "No se pudo conectar con el servidor";
       }
@@ -410,11 +396,10 @@ const GestionGaleriaScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Información actualizada */}
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={20} color="#2196F3" />
           <Text style={styles.infoText}>
-            💡 Ahora puedes subir imágenes y videos de cualquier tamaño. La base de datos acepta contenido ilimitado.
+            💡 Ahora puedes subir imágenes y videos de cualquier tamaño sin límites.
           </Text>
         </View>
 
@@ -450,7 +435,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
           />
         )}
 
-        {/* Modal de crear/editar */}
         <Modal
           visible={modalVisible}
           animationType="slide"
@@ -477,7 +461,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
               </View>
 
               <ScrollView contentContainerStyle={styles.formContainer}>
-                {/* Selector de archivo */}
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>
                     Archivo <Text style={styles.required}>*</Text>
@@ -507,7 +490,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
                     </TouchableOpacity>
                   </View>
 
-                  {/* Vista previa */}
                   {vistaPreviaUri && (
                     <View style={styles.previewContainer}>
                       <Image
@@ -528,7 +510,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
                   )}
                 </View>
 
-                {/* Título */}
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>
                     Título <Text style={styles.required}>*</Text>
@@ -542,7 +523,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
                   />
                 </View>
 
-                {/* Descripción */}
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Descripción (opcional)</Text>
                   <TextInput
@@ -556,7 +536,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
                   />
                 </View>
 
-                {/* Estado visible */}
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Visibilidad</Text>
                   <View style={styles.switchContainer}>
@@ -584,7 +563,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
                   </View>
                 </View>
 
-                {/* Botón de guardar */}
                 <TouchableOpacity
                   style={[styles.submitButton, uploading && styles.submitButtonDisabled]}
                   onPress={handleSubmit}
