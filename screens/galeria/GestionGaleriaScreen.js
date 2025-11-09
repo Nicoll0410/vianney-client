@@ -1,6 +1,6 @@
 /* =========================================================
    screens/galeria/GestionGaleriaScreen.js
-   VERSIÓN FINAL - Sin límites de tamaño
+   VERSIÓN CORREGIDA - Mejor manejo de autenticación
    ========================================================= */
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -52,16 +52,30 @@ const GestionGaleriaScreen = ({ navigation }) => {
   const [infoModalVisible, setInfoModalVisible] = useState(false);
   const [infoModalMessage, setInfoModalMessage] = useState({});
 
+  // Función mejorada para obtener token
+  const getToken = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      return token;
+    } catch (error) {
+      console.error("Error obteniendo token:", error);
+      return null;
+    }
+  };
+
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem("token");
+      const token = await getToken();
+      
+      const headers = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       
       const response = await axios.get(
         "https://vianney-server.onrender.com/galeria",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers }
       );
 
       if (response.data.success) {
@@ -204,7 +218,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
 
     try {
       setUploading(true);
-      const token = await AsyncStorage.getItem("token");
+      const token = await getToken();
       
       const data = {
         titulo: titulo.trim(),
@@ -219,19 +233,24 @@ const GestionGaleriaScreen = ({ navigation }) => {
       console.log("📤 Enviando datos:");
       console.log("URL length:", data.url.length);
 
+      const headers = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       if (isEditing) {
         await axios.put(
           `https://vianney-server.onrender.com/galeria/${selectedItem.id}`,
           data,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers }
         );
         showInfoModal("Éxito ✅", "Elemento actualizado exitosamente");
       } else {
-        await axios.post("https://vianney-server.onrender.com/galeria", data, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await axios.post(
+          "https://vianney-server.onrender.com/galeria", 
+          data, 
+          { headers }
+        );
         showInfoModal("Éxito ✅", "Elemento agregado exitosamente");
       }
 
@@ -262,12 +281,16 @@ const GestionGaleriaScreen = ({ navigation }) => {
 
   const handleDelete = async () => {
     try {
-      const token = await AsyncStorage.getItem("token");
+      const token = await getToken();
+      
+      const headers = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       await axios.delete(
         `https://vianney-server.onrender.com/galeria/${itemToDelete}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers }
       );
 
       setShowConfirmModal(false);
@@ -281,13 +304,17 @@ const GestionGaleriaScreen = ({ navigation }) => {
 
   const toggleActivo = async (item) => {
     try {
-      const token = await AsyncStorage.getItem("token");
+      const token = await getToken();
+      
+      const headers = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       await axios.patch(
         `https://vianney-server.onrender.com/galeria/${item.id}/toggle-activo`,
         {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers }
       );
 
       fetchItems();
