@@ -102,34 +102,44 @@ const GestionGaleriaScreen = ({ navigation }) => {
     setSelectedItem(null);
   };
 
-  // 🆕 FUNCIÓN MEJORADA: Comprimir y convertir a base64
-  const procesarYComprimirImagen = async (uri) => {
-    try {
-      // Comprimir la imagen
-      const manipulatedImage = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: 1200 } }], // Redimensionar a un ancho máximo
-        { 
-          compress: 0.7, // Compresión del 70%
-          format: ImageManipulator.SaveFormat.JPEG,
-          base64: true // ✅ IMPORTANTE: generar base64
-        }
-      );
+// 🆕 FUNCIÓN ALTERNATIVA: Comprimir sin expo-image-manipulator
+const procesarYComprimirImagen = async (uri) => {
+  try {
+    // Usar ImagePicker con compresión nativa
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.6, // Compresión directa (0.1 - 1.0)
+      base64: true,
+    });
 
-      // Crear string base64
-      const base64Image = `data:image/jpeg;base64,${manipulatedImage.base64}`;
+    if (!result.canceled && result.assets && result.assets[0]) {
+      const asset = result.assets[0];
       
-      console.log(`Imagen comprimida: ${base64Image.length} caracteres`);
-      
-      return {
-        base64: base64Image,
-        uri: manipulatedImage.uri
-      };
-    } catch (error) {
-      console.error("Error al comprimir imagen:", error);
-      throw new Error("No se pudo procesar la imagen");
+      if (asset.base64) {
+        const base64Image = `data:image/jpeg;base64,${asset.base64}`;
+        console.log(`Imagen comprimida: ${base64Image.length} caracteres`);
+        
+        return {
+          base64: base64Image,
+          uri: asset.uri
+        };
+      } else {
+        // Fallback: si no viene base64, usar la URI normal
+        return {
+          base64: asset.uri, // En este caso sería la URI, no base64
+          uri: asset.uri
+        };
+      }
     }
-  };
+    
+    throw new Error("No se pudo seleccionar la imagen");
+  } catch (error) {
+    console.error("Error al procesar imagen:", error);
+    throw new Error("No se pudo procesar la imagen");
+  }
+};
 
   const solicitarPermisos = async () => {
     if (Platform.OS !== 'web') {
