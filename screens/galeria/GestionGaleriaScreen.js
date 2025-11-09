@@ -1,6 +1,6 @@
 /* =========================================================
    screens/galeria/GestionGaleriaScreen.js
-   Pantalla de gestión CRUD (solo Admin y Barberos)
+   VERSIÓN MEJORADA - Con selector de archivos
    ========================================================= */
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -16,12 +16,14 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { Picker } from "@react-native-picker/picker";
+import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import Footer from "../../components/Footer";
 import ConfirmarModal from "../../components/ConfirmarModal";
 import InfoModal from "../../components/InfoModal";
@@ -35,14 +37,14 @@ const GestionGaleriaScreen = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [uploading, setUploading] = useState(false);
   
   // Form states
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [tipo, setTipo] = useState("imagen");
-  const [url, setUrl] = useState("");
-  const [miniatura, setMiniatura] = useState("");
-  const [orden, setOrden] = useState("0");
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState(null); // Nuevo
+  const [vistaPreviaUri, setVistaPreviaUri] = useState(null); // Nuevo
   const [activo, setActivo] = useState(true);
   
   // Modals
@@ -55,6 +57,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem("token");
+      
       const response = await axios.get(
         "https://vianney-server.onrender.com/galeria",
         {
@@ -67,7 +70,15 @@ const GestionGaleriaScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error("Error al cargar galería:", error);
-      showInfoModal("Error ❌", "No se pudo cargar la galería");
+      
+      // Mostrar mensaje más específico
+      if (error.response) {
+        showInfoModal("Error ❌", error.response.data?.mensaje || "Error del servidor");
+      } else if (error.request) {
+        showInfoModal("Error ❌", "No se pudo conectar con el servidor. Verifica tu conexión a internet.");
+      } else {
+        showInfoModal("Error ❌", "Error al cargar la galería");
+      }
     } finally {
       setLoading(false);
     }
@@ -92,12 +103,92 @@ const GestionGaleriaScreen = ({ navigation }) => {
     setTitulo("");
     setDescripcion("");
     setTipo("imagen");
-    setUrl("");
-    setMiniatura("");
-    setOrden("0");
+    setArchivoSeleccionado(null);
+    setVistaPreviaUri(null);
     setActivo(true);
     setIsEditing(false);
     setSelectedItem(null);
+  };
+
+  // 🆕 NUEVA FUNCIÓN: Solicitar permisos
+  const solicitarPermisos = async () => {
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permisos necesarios',
+          'Necesitamos acceso a tus fotos para subir contenido.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // 🆕 NUEVA FUNCIÓN: Seleccionar imagen
+  const seleccionarImagen = async () => {
+    const tienePermiso = await solicitarPermisos();
+    if (!tienePermiso) return;
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.7, // Comprimir un poco
+        base64: true, // Importante: convertir a base64
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        
+        // Crear URI base64
+        const base64Image = `data:image/jpeg;base64,${asset.base64}`;
+        
+        setArchivoSeleccionado(base64Image);
+        setVistaPreviaUri(asset.uri);
+        setTipo("imagen");
+        
+        showInfoModal("Éxito ✅", "Imagen seleccionada correctamente");
+      }
+    } catch (error) {
+      console.error("Error al seleccionar imagen:", error);
+      showInfoModal("Error ❌", "Error al seleccionar la imagen");
+    }
+  };
+
+  // 🆕 NUEVA FUNCIÓN: Seleccionar video
+  const seleccionarVideo = async () => {
+    const tienePermiso = await solicitarPermisos();
+    if (!tienePermiso) return;
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        quality: 0.5,
+        videoMaxDuration: 60, // Máximo 1 minuto
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        
+        // Para videos, guardamos la URI directamente
+        // En una app real, subirías esto a un servidor
+        setArchivoSeleccionado(asset.uri);
+        setVistaPreviaUri(asset.uri);
+        setTipo("video");
+        
+        showInfoModal(
+          "Importante ℹ️", 
+          "Por ahora, los videos se guardan localmente. En producción deberías subirlos a un servicio como Cloudinary o AWS S3."
+        );
+      }
+    } catch (error) {
+      console.error("Error al seleccionar video:", error);
+      showInfoModal("Error ❌", "Error al seleccionar el video");
+    }
   };
 
   const abrirModalCrear = () => {
@@ -110,29 +201,36 @@ const GestionGaleriaScreen = ({ navigation }) => {
     setTitulo(item.titulo);
     setDescripcion(item.descripcion || "");
     setTipo(item.tipo);
-    setUrl(item.url);
-    setMiniatura(item.miniatura || "");
-    setOrden(item.orden.toString());
+    setArchivoSeleccionado(item.url);
+    setVistaPreviaUri(item.url);
     setActivo(item.activo);
     setIsEditing(true);
     setModalVisible(true);
   };
 
   const handleSubmit = async () => {
-    if (!titulo.trim() || !url.trim()) {
-      showInfoModal("Error ❌", "El título y la URL son obligatorios");
+    // Validaciones básicas
+    if (!titulo.trim()) {
+      showInfoModal("Error ❌", "El título es obligatorio");
+      return;
+    }
+
+    if (!isEditing && !archivoSeleccionado) {
+      showInfoModal("Error ❌", "Debes seleccionar una imagen o video");
       return;
     }
 
     try {
+      setUploading(true);
       const token = await AsyncStorage.getItem("token");
+      
       const data = {
         titulo: titulo.trim(),
         descripcion: descripcion.trim() || null,
         tipo,
-        url: url.trim(),
-        miniatura: miniatura.trim() || null,
-        orden: parseInt(orden) || 0,
+        url: archivoSeleccionado, // Ya está en base64 o URI
+        miniatura: tipo === "imagen" ? archivoSeleccionado : null,
+        orden: items.length, // Automático: siguiente posición
         activo,
       };
 
@@ -161,6 +259,8 @@ const GestionGaleriaScreen = ({ navigation }) => {
         "Error ❌",
         error.response?.data?.mensaje || "Error al guardar el elemento"
       );
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -209,7 +309,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
     }
   };
 
-  const renderItem = ({ item }) => {
+  const renderItem = ({ item, index }) => {
     const esVideo = item.tipo === "video";
     const urlMostrar = esVideo && item.miniatura ? item.miniatura : item.url;
 
@@ -226,6 +326,8 @@ const GestionGaleriaScreen = ({ navigation }) => {
               <Ionicons name="videocam" size={20} color="white" />
             </View>
           )}
+          
+          {/* Badge de estado con explicación */}
           <TouchableOpacity
             style={[
               styles.statusBadge,
@@ -234,9 +336,14 @@ const GestionGaleriaScreen = ({ navigation }) => {
             onPress={() => toggleActivo(item)}
           >
             <Text style={styles.statusText}>
-              {item.activo ? "Activo" : "Inactivo"}
+              {item.activo ? "Visible" : "Oculto"}
             </Text>
           </TouchableOpacity>
+          
+          {/* Badge de posición */}
+          <View style={styles.positionBadge}>
+            <Text style={styles.positionText}>#{index + 1}</Text>
+          </View>
         </View>
 
         <View style={styles.cardContent}>
@@ -249,9 +356,11 @@ const GestionGaleriaScreen = ({ navigation }) => {
             </Text>
           )}
           <View style={styles.cardMeta}>
-            <Text style={styles.cardMetaText}>Orden: {item.orden}</Text>
             <Text style={styles.cardMetaText}>
-              {item.tipo === "imagen" ? "Imagen" : "Video"}
+              {item.tipo === "imagen" ? "📷 Foto" : "🎥 Video"}
+            </Text>
+            <Text style={styles.cardMetaText}>
+              {item.activo ? "Los clientes lo ven" : "Solo tú lo ves"}
             </Text>
           </View>
         </View>
@@ -262,12 +371,16 @@ const GestionGaleriaScreen = ({ navigation }) => {
             onPress={() => abrirModalEditar(item)}
           >
             <Ionicons name="pencil" size={20} color="#424242" />
+            <Text style={styles.actionButtonText}>Editar</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => handleDeleteConfirmation(item.id)}
           >
             <Ionicons name="trash-outline" size={20} color="#d32f2f" />
+            <Text style={[styles.actionButtonText, { color: "#d32f2f" }]}>
+              Eliminar
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -285,10 +398,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
             >
               <Ionicons name="arrow-back" size={24} color="#424242" />
             </TouchableOpacity>
-            <Text style={styles.titulo}>Gestión de Galería</Text>
-            <View style={styles.contadorContainer}>
-              <Text style={styles.contadorTexto}>{items.length}</Text>
-            </View>
+            <Text style={styles.titulo}>Gestionar Galería</Text>
           </View>
           <TouchableOpacity
             style={styles.botonHeader}
@@ -298,6 +408,14 @@ const GestionGaleriaScreen = ({ navigation }) => {
             <Ionicons name="add-circle" size={20} color="white" />
             <Text style={styles.textoBoton}>Agregar</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Explicación rápida */}
+        <View style={styles.infoBox}>
+          <Ionicons name="information-circle" size={20} color="#2196F3" />
+          <Text style={styles.infoText}>
+            Aquí puedes subir fotos y videos. Los elementos "Visibles" se muestran a los clientes.
+          </Text>
         </View>
 
         {loading ? (
@@ -310,6 +428,9 @@ const GestionGaleriaScreen = ({ navigation }) => {
             <Ionicons name="images-outline" size={80} color="#ccc" />
             <Text style={styles.emptyText}>
               No hay elementos en la galería
+            </Text>
+            <Text style={styles.emptySubtext}>
+              Agrega fotos o videos para que los clientes vean tu trabajo
             </Text>
             <TouchableOpacity
               style={styles.emptyButton}
@@ -356,6 +477,56 @@ const GestionGaleriaScreen = ({ navigation }) => {
               </View>
 
               <ScrollView contentContainerStyle={styles.formContainer}>
+                {/* Selector de archivo */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>
+                    Archivo <Text style={styles.required}>*</Text>
+                  </Text>
+                  
+                  <View style={styles.fileButtonsContainer}>
+                    <TouchableOpacity
+                      style={[styles.fileButton, tipo === "imagen" && styles.fileButtonActive]}
+                      onPress={seleccionarImagen}
+                    >
+                      <Ionicons name="image" size={24} color={tipo === "imagen" ? "white" : "#424242"} />
+                      <Text style={[styles.fileButtonText, tipo === "imagen" && styles.fileButtonTextActive]}>
+                        Elegir Foto
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.fileButton, tipo === "video" && styles.fileButtonActive]}
+                      onPress={seleccionarVideo}
+                    >
+                      <Ionicons name="videocam" size={24} color={tipo === "video" ? "white" : "#424242"} />
+                      <Text style={[styles.fileButtonText, tipo === "video" && styles.fileButtonTextActive]}>
+                        Elegir Video
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Vista previa */}
+                  {vistaPreviaUri && (
+                    <View style={styles.previewContainer}>
+                      <Image
+                        source={{ uri: vistaPreviaUri }}
+                        style={styles.previewImage}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        style={styles.removePreviewButton}
+                        onPress={() => {
+                          setArchivoSeleccionado(null);
+                          setVistaPreviaUri(null);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={30} color="#d32f2f" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+
+                {/* Título */}
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>
                     Título <Text style={styles.required}>*</Text>
@@ -367,114 +538,71 @@ const GestionGaleriaScreen = ({ navigation }) => {
                     placeholder="Ej: Corte degradado"
                     placeholderTextColor="#999"
                   />
+                  <Text style={styles.helperText}>
+                    Un título descriptivo para identificar el contenido
+                  </Text>
                 </View>
 
+                {/* Descripción */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>Descripción</Text>
+                  <Text style={styles.label}>Descripción (opcional)</Text>
                   <TextInput
                     style={[styles.input, styles.textArea]}
                     value={descripcion}
                     onChangeText={setDescripcion}
-                    placeholder="Descripción del elemento"
+                    placeholder="Describe el trabajo realizado..."
                     placeholderTextColor="#999"
                     multiline
                     numberOfLines={3}
                   />
                 </View>
 
+                {/* Estado visible */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>
-                    Tipo <Text style={styles.required}>*</Text>
-                  </Text>
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={tipo}
-                      onValueChange={setTipo}
-                      style={styles.picker}
-                    >
-                      <Picker.Item label="Imagen" value="imagen" />
-                      <Picker.Item label="Video" value="video" />
-                    </Picker>
-                  </View>
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>
-                    URL <Text style={styles.required}>*</Text>
-                  </Text>
-                  <TextInput
-                    style={styles.input}
-                    value={url}
-                    onChangeText={setUrl}
-                    placeholder="https://ejemplo.com/imagen.jpg"
-                    placeholderTextColor="#999"
-                    autoCapitalize="none"
-                  />
-                  <Text style={styles.helperText}>
-                    Puede ser una URL externa o datos base64
-                  </Text>
-                </View>
-
-                {tipo === "video" && (
-                  <View style={styles.formGroup}>
-                    <Text style={styles.label}>Miniatura (URL)</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={miniatura}
-                      onChangeText={setMiniatura}
-                      placeholder="https://ejemplo.com/miniatura.jpg"
-                      placeholderTextColor="#999"
-                      autoCapitalize="none"
-                    />
-                  </View>
-                )}
-
-                <View style={styles.formRow}>
-                  <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={styles.label}>Orden</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={orden}
-                      onChangeText={setOrden}
-                      placeholder="0"
-                      placeholderTextColor="#999"
-                      keyboardType="numeric"
-                    />
-                  </View>
-
-                  <View style={[styles.formGroup, { flex: 1 }]}>
-                    <Text style={styles.label}>Estado</Text>
-                    <View style={styles.switchContainer}>
+                  <Text style={styles.label}>Visibilidad</Text>
+                  <View style={styles.switchContainer}>
+                    <View>
                       <Text style={styles.switchLabel}>
-                        {activo ? "Activo" : "Inactivo"}
+                        {activo ? "✅ Visible para clientes" : "❌ Oculto (solo tú lo ves)"}
                       </Text>
-                      <TouchableOpacity
-                        style={[
-                          styles.switch,
-                          activo ? styles.switchActive : styles.switchInactive,
-                        ]}
-                        onPress={() => setActivo(!activo)}
-                      >
-                        <View
-                          style={[
-                            styles.switchThumb,
-                            activo
-                              ? styles.switchThumbActive
-                              : styles.switchThumbInactive,
-                          ]}
-                        />
-                      </TouchableOpacity>
+                      <Text style={styles.switchHelper}>
+                        {activo 
+                          ? "Los clientes verán este contenido en la galería"
+                          : "Este contenido estará oculto para los clientes"}
+                      </Text>
                     </View>
+                    <TouchableOpacity
+                      style={[
+                        styles.switch,
+                        activo ? styles.switchActive : styles.switchInactive,
+                      ]}
+                      onPress={() => setActivo(!activo)}
+                    >
+                      <View
+                        style={[
+                          styles.switchThumb,
+                          activo
+                            ? styles.switchThumbActive
+                            : styles.switchThumbInactive,
+                        ]}
+                      />
+                    </TouchableOpacity>
                   </View>
                 </View>
 
+                {/* Botón de guardar */}
                 <TouchableOpacity
-                  style={styles.submitButton}
+                  style={[styles.submitButton, uploading && styles.submitButtonDisabled]}
                   onPress={handleSubmit}
+                  disabled={uploading}
                 >
-                  <Text style={styles.submitButtonText}>
-                    {isEditing ? "Actualizar" : "Guardar"}
-                  </Text>
+                  {uploading ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <Text style={styles.submitButtonText}>
+                      {isEditing ? "Actualizar" : "Guardar"}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -485,8 +613,8 @@ const GestionGaleriaScreen = ({ navigation }) => {
           visible={showConfirmModal}
           onCancel={() => setShowConfirmModal(false)}
           onConfirm={handleDelete}
-          title="Confirmar eliminación ⚠️"
-          message="¿Estás seguro de que deseas eliminar este elemento? Esta acción no se puede deshacer."
+          title="¿Eliminar este elemento?"
+          message="Esta acción no se puede deshacer. El contenido se eliminará permanentemente."
         />
 
         <InfoModal
@@ -527,19 +655,6 @@ const styles = StyleSheet.create({
   titulo: {
     fontSize: 22,
     fontWeight: "bold",
-    marginRight: 10,
-  },
-  contadorContainer: {
-    backgroundColor: "#D9D9D9",
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  contadorTexto: {
-    fontWeight: "bold",
-    fontSize: 14,
   },
   botonHeader: {
     flexDirection: "row",
@@ -556,6 +671,20 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "500",
     fontSize: 14,
+  },
+  infoBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E3F2FD",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  infoText: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 13,
+    color: "#1976D2",
   },
   loadingContainer: {
     flex: 1,
@@ -577,17 +706,25 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 16,
     textAlign: "center",
+    fontWeight: "600",
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#999",
+    marginTop: 8,
+    textAlign: "center",
   },
   emptyButton: {
     marginTop: 20,
     backgroundColor: "#424242",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     borderRadius: 8,
   },
   emptyButtonText: {
     color: "white",
-    fontWeight: "500",
+    fontWeight: "600",
+    fontSize: 14,
   },
   listContainer: {
     paddingBottom: 16,
@@ -628,8 +765,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     right: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 12,
   },
   statusBadgeActive: {
@@ -639,6 +776,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#9E9E9E",
   },
   statusText: {
+    color: "white",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  positionBadge: {
+    position: "absolute",
+    bottom: 8,
+    left: 8,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  positionText: {
     color: "white",
     fontSize: 11,
     fontWeight: "600",
@@ -658,8 +809,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cardMeta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "column",
+    gap: 4,
   },
   cardMetaText: {
     fontSize: 11,
@@ -667,13 +818,20 @@ const styles = StyleSheet.create({
   },
   cardActions: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-around",
     padding: 12,
     borderTopWidth: 1,
     borderTopColor: "#eee",
   },
   actionButton: {
-    marginLeft: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  actionButtonText: {
+    fontSize: 13,
+    color: "#424242",
+    fontWeight: "500",
   },
   modalOverlay: {
     flex: 1,
@@ -704,11 +862,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   formGroup: {
-    marginBottom: 16,
-  },
-  formRow: {
-    flexDirection: "row",
-    marginBottom: 16,
+    marginBottom: 20,
   },
   label: {
     fontSize: 14,
@@ -736,14 +890,51 @@ const styles = StyleSheet.create({
     color: "#999",
     marginTop: 4,
   },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    backgroundColor: "#fafafa",
+  fileButtonsContainer: {
+    flexDirection: "row",
+    gap: 12,
   },
-  picker: {
-    height: 50,
+  fileButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: "#424242",
+    borderRadius: 8,
+    backgroundColor: "white",
+  },
+  fileButtonActive: {
+    backgroundColor: "#424242",
+    borderColor: "#424242",
+  },
+  fileButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#424242",
+  },
+  fileButtonTextActive: {
+    color: "white",
+  },
+  previewContainer: {
+    marginTop: 12,
+    position: "relative",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  previewImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 8,
+  },
+  removePreviewButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "white",
+    borderRadius: 15,
   },
   switchContainer: {
     flexDirection: "row",
@@ -753,7 +944,13 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 14,
-    color: "#666",
+    fontWeight: "500",
+    color: "#333",
+  },
+  switchHelper: {
+    fontSize: 11,
+    color: "#999",
+    marginTop: 4,
   },
   switch: {
     width: 50,
@@ -776,14 +973,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "white",
   },
-  switchThumbActive: {},
-  switchThumbInactive: {},
   submitButton: {
     backgroundColor: "#424242",
     padding: 14,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 8,
+  },
+  submitButtonDisabled: {
+    backgroundColor: "#999",
   },
   submitButtonText: {
     color: "white",
