@@ -1,12 +1,12 @@
 // navigation/CustomDrawerNavigator.js
 import React, { useContext, useState, useRef } from "react";
-import { 
-  View, 
-  TouchableOpacity, 
-  Text, 
-  StyleSheet, 
-  Animated, 
-  Image, 
+import {
+  View,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Animated,
+  Image,
   useWindowDimensions,
   Platform,
   SafeAreaView
@@ -32,6 +32,8 @@ import MovimientosScreen from "../screens/movimientos/MovimientosScreen";
 import VentasScreen from "../screens/ventas/VentasScreen";
 import NotificacionesScreen from "../screens/agenda/NotificacionesScreen";
 import ControlInsumos from "../screens/insumos/ControlInsumos";
+import GaleriaScreen from "../screens/galeria/GaleriaScreen";
+import GestionGaleriaScreen from "../screens/galeria/GestionGaleriaScreen";
 
 const Stack = createStackNavigator();
 
@@ -96,7 +98,7 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerAnimation = useRef(new Animated.Value(-300)).current;
   const { width, height } = useWindowDimensions();
-  
+
   // Determinar si es web
   const isWeb = Platform.OS === 'web';
   // Para web, mostramos el drawer siempre visible en pantallas grandes
@@ -105,7 +107,7 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
   const toggleDrawer = () => {
     // En web con pantalla grande, el drawer siempre está visible
     if (isWeb && isLargeScreen) return;
-    
+
     if (drawerOpen) {
       Animated.timing(drawerAnimation, {
         toValue: -300,
@@ -125,7 +127,7 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
   const closeDrawer = () => {
     // En web con pantalla grande, el drawer siempre está visible
     if (isWeb && isLargeScreen) return;
-    
+
     Animated.timing(drawerAnimation, {
       toValue: -300,
       duration: 300,
@@ -144,7 +146,7 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
     headerLeft: () => {
       // No mostrar el ícono de menú en pantallas grandes de web
       if (isWeb && isLargeScreen) return null;
-      
+
       return (
         <TouchableOpacity onPress={toggleDrawer} style={{ marginLeft: 15 }}>
           <Ionicons name="menu" size={24} color="black" />
@@ -159,8 +161,24 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
       case "Cliente":
         return (
           <>
-            <Stack.Screen 
-              name="Agenda" 
+            <Stack.Screen
+              name="Galeria"
+              component={GaleriaScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Galería",
+              })}
+            />
+            <Stack.Screen
+              name="GestionGaleria"
+              component={GestionGaleriaScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Gestión de Galería",
+              })}
+            />
+            <Stack.Screen
+              name="Agenda"
               component={AgendaScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
@@ -172,8 +190,8 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
                 )
               })}
             />
-            <Stack.Screen 
-              name="Citas" 
+            <Stack.Screen
+              name="Citas"
               component={CitasScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
@@ -186,24 +204,40 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
       case "Barbero":
         return (
           <>
-            <Stack.Screen 
-              name="Clientes" 
+            <Stack.Screen
+              name="Clientes"
               component={ClientesScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Clientes"
               })}
             />
-            <Stack.Screen 
-              name="Movimientos" 
+            <Stack.Screen
+              name="Galeria"
+              component={GaleriaScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Galería",
+              })}
+            />
+            <Stack.Screen
+              name="GestionGaleria"
+              component={GestionGaleriaScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Gestión de Galería",
+              })}
+            />
+            <Stack.Screen
+              name="Movimientos"
               component={MovimientosScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Movimientos"
               })}
             />
-            <Stack.Screen 
-              name="Agenda" 
+            <Stack.Screen
+              name="Agenda"
               component={AgendaScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
@@ -215,8 +249,8 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
                 )
               })}
             />
-            <Stack.Screen 
-              name="Citas" 
+            <Stack.Screen
+              name="Citas"
               component={CitasScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
@@ -230,88 +264,104 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
       default:
         return (
           <>
-            <Stack.Screen 
-              name="Dashboard" 
+            <Stack.Screen
+              name="Dashboard"
               component={DashboardScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Dashboard"
               })}
             />
-            <Stack.Screen 
-              name="Clientes" 
+            <Stack.Screen
+              name="Galeria"
+              component={GaleriaScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Galería",
+              })}
+            />
+            <Stack.Screen
+              name="GestionGaleria"
+              component={GestionGaleriaScreen}
+              options={({ navigation }) => ({
+                ...commonOptions({ navigation }),
+                headerTitle: "Gestión de Galería",
+              })}
+            />
+            <Stack.Screen
+              name="Clientes"
               component={ClientesScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Clientes"
               })}
             />
-            <Stack.Screen 
-              name="Barberos" 
+            <Stack.Screen
+              name="Barberos"
               component={BarberosScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Barberos"
               })}
             />
-            <Stack.Screen 
-              name="Roles" 
+            <Stack.Screen
+              name="Roles"
               component={RolesScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Roles"
               })}
             />
-            <Stack.Screen 
-              name="CategoriaInsumos" 
+            <Stack.Screen
+              name="CategoriaInsumos"
               component={CategoriaInsumosScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Categoría de Insumos"
               })}
             />
-            <Stack.Screen 
-              name="Insumos" 
+            <Stack.Screen
+              name="Insumos"
               component={InsumosScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Insumos"
               })}
             />
-            <Stack.Screen 
-              name="Proveedores" 
+            <Stack.Screen
+              name="Proveedores"
               component={ProveedoresScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Proveedores"
               })}
             />
-            <Stack.Screen 
-              name="Compras" 
+            <Stack.Screen
+              name="Compras"
               component={ComprasScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Compras"
               })}
             />
-            <Stack.Screen 
-              name="Movimientos" 
+            <Stack.Screen
+              name="Movimientos"
               component={MovimientosScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Movimientos"
               })}
             />
-            <Stack.Screen 
-              name="Servicios" 
+            <Stack.Screen
+              name="Servicios"
               component={ServiciosScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Servicios"
               })}
             />
-            <Stack.Screen 
-              name="Agenda" 
+            <Stack.Screen
+              name="Agenda"
               component={AgendaScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
@@ -323,32 +373,32 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
                 )
               })}
             />
-            <Stack.Screen 
-              name="Citas" 
+            <Stack.Screen
+              name="Citas"
               component={CitasScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Citas"
               })}
             />
-            <Stack.Screen 
-              name="Ventas" 
+            <Stack.Screen
+              name="Ventas"
               component={VentasScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Ventas"
               })}
             />
-            <Stack.Screen 
-              name="Notificaciones" 
+            <Stack.Screen
+              name="Notificaciones"
               component={NotificacionesScreen}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
                 headerTitle: "Notificaciones"
               })}
             />
-            <Stack.Screen 
-              name="ControlInsumos" 
+            <Stack.Screen
+              name="ControlInsumos"
               component={ControlInsumos}
               options={({ navigation }) => ({
                 ...commonOptions({ navigation }),
@@ -373,24 +423,24 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
         )}
 
         {/* Drawer content */}
-        <Animated.View 
+        <Animated.View
           style={[
-            styles.drawer, 
-            { 
+            styles.drawer,
+            {
               transform: [
                 // En web con pantalla grande, siempre visible (translateX: 0)
-                isWeb && isLargeScreen 
-                  ? { translateX: 0 } 
+                isWeb && isLargeScreen
+                  ? { translateX: 0 }
                   : { translateX: drawerAnimation }
               ]
             }
           ]}
         >
-          <CustomDrawer 
-            navigation={{ 
+          <CustomDrawer
+            navigation={{
               navigate: navigateAndClose,
               closeDrawer: closeDrawer
-            }} 
+            }}
           />
         </Animated.View>
 
