@@ -1,6 +1,6 @@
 /* =========================================================
    screens/galeria/GestionGaleriaScreen.js
-   VERSIÓN FINAL - Sin dependencias problemáticas para Vercel
+   VERSIÓN ULTRA-COMPRIMIDA - Sin límites
    ========================================================= */
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -101,26 +101,20 @@ const GestionGaleriaScreen = ({ navigation }) => {
     setSelectedItem(null);
   };
 
-  // FUNCIÓN MEJORADA: Seleccionar imagen con compresión nativa
+  // FUNCIÓN ULTRA-COMPRIMIDA
   const seleccionarImagen = async () => {
     try {
-      // Solicitar permisos
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
-          'Permisos necesarios', 
-          'Necesitamos acceso a tu galería para seleccionar imágenes.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería.');
         return;
       }
 
-      // Abrir selector de imágenes
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.6, // Compresión del 60% - reduce tamaño significativamente
+        aspect: [3, 4], // Menor relación para menos datos
+        quality: 0.3, // COMPRESIÓN MÁXIMA (30% calidad)
         base64: true,
       });
 
@@ -130,15 +124,26 @@ const GestionGaleriaScreen = ({ navigation }) => {
         if (asset.base64) {
           const base64Image = `data:image/jpeg;base64,${asset.base64}`;
           
-          console.log(`✅ Imagen procesada: ${base64Image.length} caracteres`);
+          console.log("📊 DEBUG Frontend - Imagen seleccionada:");
+          console.log("Longitud base64:", base64Image.length);
+          console.log("Primeros 100 chars:", base64Image.substring(0, 100) + "...");
+          
+          // Verificar tamaño
+          if (base64Image.length > 100000) {
+            showInfoModal(
+              "Imagen muy grande ⚠️", 
+              `La imagen tiene ${base64Image.length} caracteres. Se recomienda usar una imagen más pequeña.`
+            );
+            return;
+          }
           
           setArchivoSeleccionado(base64Image);
           setVistaPreviaUri(asset.uri);
           setTipo("imagen");
           
-          showInfoModal("Éxito ✅", "Imagen lista para subir");
+          showInfoModal("Éxito ✅", "Imagen procesada y lista para subir");
         } else {
-          showInfoModal("Error ❌", "No se pudo procesar la imagen correctamente");
+          showInfoModal("Error ❌", "No se pudo generar la imagen en base64");
         }
       }
     } catch (error) {
@@ -159,7 +164,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
         mediaTypes: ImagePicker.MediaTypeOptions.Videos,
         allowsEditing: true,
         quality: 0.7,
-        videoMaxDuration: 60,
+        videoMaxDuration: 30, // Reducir a 30 segundos máximo
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
@@ -172,7 +177,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
         
         showInfoModal(
           "Video seleccionado 🎥", 
-          "El video está listo para subir. Nota: En producción se recomienda usar servicios de almacenamiento en la nube."
+          "El video está listo para subir."
         );
       }
     } catch (error) {
@@ -224,6 +229,12 @@ const GestionGaleriaScreen = ({ navigation }) => {
         activo,
       };
 
+      // ✅ DEBUG Frontend: Ver qué se envía
+      console.log("📤 DEBUG Frontend - Enviando datos:");
+      console.log("URL length:", data.url.length);
+      console.log("Tipo:", data.tipo);
+      console.log("Título:", data.titulo);
+
       if (isEditing) {
         await axios.put(
           `https://vianney-server.onrender.com/galeria/${selectedItem.id}`,
@@ -244,19 +255,21 @@ const GestionGaleriaScreen = ({ navigation }) => {
       resetForm();
       fetchItems();
     } catch (error) {
-      console.error("Error al guardar:", error);
+      console.error("❌ ERROR Frontend al guardar:", error);
+      
+      // ✅ DEBUG Frontend: Error completo
+      console.log("🔴 DEBUG Frontend - Error response:", error.response?.data);
       
       let mensajeError = "Error al guardar el elemento";
       
       if (error.response) {
         mensajeError = error.response.data?.mensaje || mensajeError;
         
-        // Manejo específico de errores de longitud
         if (error.response.data?.mensaje?.includes('caracteres')) {
-          mensajeError = "La imagen es demasiado grande. Intenta seleccionar una imagen más pequeña o reducir la calidad.";
+          mensajeError = `Problema de tamaño: ${error.response.data.mensaje}. Intenta con una imagen más pequeña.`;
         }
       } else if (error.request) {
-        mensajeError = "No se pudo conectar con el servidor. Verifica tu conexión a internet.";
+        mensajeError = "No se pudo conectar con el servidor";
       }
       
       showInfoModal("Error ❌", mensajeError);
@@ -406,11 +419,11 @@ const GestionGaleriaScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Información para el usuario */}
+        {/* Información */}
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={20} color="#2196F3" />
           <Text style={styles.infoText}>
-            💡 Consejo: Usa imágenes con calidad media (60%) para mejor rendimiento. El sistema ahora acepta imágenes de cualquier tamaño.
+            💡 Las imágenes se comprimen automáticamente al 30% de calidad para mejor rendimiento.
           </Text>
         </View>
 
