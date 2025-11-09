@@ -1,6 +1,6 @@
 /* =========================================================
    screens/galeria/GestionGaleriaScreen.js
-   VERSIÓN OPTIMIZADA - Con compresión automática de imágenes
+   VERSIÓN FINAL - Sin dependencias problemáticas para Vercel
    ========================================================= */
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -23,7 +23,6 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from 'expo-image-manipulator'; // 🆕 PARA COMPRIMIR
 import Footer from "../../components/Footer";
 import ConfirmarModal from "../../components/ConfirmarModal";
 import InfoModal from "../../components/InfoModal";
@@ -102,101 +101,60 @@ const GestionGaleriaScreen = ({ navigation }) => {
     setSelectedItem(null);
   };
 
-// 🆕 FUNCIÓN ALTERNATIVA: Comprimir sin expo-image-manipulator
-const procesarYComprimirImagen = async (uri) => {
-  try {
-    // Usar ImagePicker con compresión nativa
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.6, // Compresión directa (0.1 - 1.0)
-      base64: true,
-    });
-
-    if (!result.canceled && result.assets && result.assets[0]) {
-      const asset = result.assets[0];
-      
-      if (asset.base64) {
-        const base64Image = `data:image/jpeg;base64,${asset.base64}`;
-        console.log(`Imagen comprimida: ${base64Image.length} caracteres`);
-        
-        return {
-          base64: base64Image,
-          uri: asset.uri
-        };
-      } else {
-        // Fallback: si no viene base64, usar la URI normal
-        return {
-          base64: asset.uri, // En este caso sería la URI, no base64
-          uri: asset.uri
-        };
-      }
-    }
-    
-    throw new Error("No se pudo seleccionar la imagen");
-  } catch (error) {
-    console.error("Error al procesar imagen:", error);
-    throw new Error("No se pudo procesar la imagen");
-  }
-};
-
-  const solicitarPermisos = async () => {
-    if (Platform.OS !== 'web') {
+  // FUNCIÓN MEJORADA: Seleccionar imagen con compresión nativa
+  const seleccionarImagen = async () => {
+    try {
+      // Solicitar permisos
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Permisos necesarios',
-          'Necesitamos acceso a tus fotos para subir contenido.',
+          'Permisos necesarios', 
+          'Necesitamos acceso a tu galería para seleccionar imágenes.',
           [{ text: 'OK' }]
         );
-        return false;
+        return;
       }
-    }
-    return true;
-  };
 
-  // 🆕 FUNCIÓN MEJORADA: Seleccionar y comprimir imagen
-  const seleccionarImagen = async () => {
-    const tienePermiso = await solicitarPermisos();
-    if (!tienePermiso) return;
-
-    try {
+      // Abrir selector de imágenes
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.8,
-        base64: false, // 🚫 No usar base64 de expo, lo hacemos nosotros
+        quality: 0.6, // Compresión del 60% - reduce tamaño significativamente
+        base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
         
-        setUploading(true);
-        
-        // 🆕 Procesar y comprimir la imagen
-        const imagenProcesada = await procesarYComprimirImagen(asset.uri);
-        
-        setArchivoSeleccionado(imagenProcesada.base64);
-        setVistaPreviaUri(imagenProcesada.uri);
-        setTipo("imagen");
-        
-        setUploading(false);
-        showInfoModal("Éxito ✅", "Imagen procesada y lista para subir");
+        if (asset.base64) {
+          const base64Image = `data:image/jpeg;base64,${asset.base64}`;
+          
+          console.log(`✅ Imagen procesada: ${base64Image.length} caracteres`);
+          
+          setArchivoSeleccionado(base64Image);
+          setVistaPreviaUri(asset.uri);
+          setTipo("imagen");
+          
+          showInfoModal("Éxito ✅", "Imagen lista para subir");
+        } else {
+          showInfoModal("Error ❌", "No se pudo procesar la imagen correctamente");
+        }
       }
     } catch (error) {
       console.error("Error al seleccionar imagen:", error);
-      setUploading(false);
-      showInfoModal("Error ❌", "Error al procesar la imagen");
+      showInfoModal("Error ❌", "Error al seleccionar la imagen");
     }
   };
 
   const seleccionarVideo = async () => {
-    const tienePermiso = await solicitarPermisos();
-    if (!tienePermiso) return;
-
     try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permisos necesarios', 'Necesitamos acceso a tus videos.');
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Videos,
         allowsEditing: true,
@@ -207,14 +165,14 @@ const procesarYComprimirImagen = async (uri) => {
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
         
-        // Para videos, usar URI directa (en producción subir a servidor)
+        // Para videos, usar URI directa
         setArchivoSeleccionado(asset.uri);
         setVistaPreviaUri(asset.uri);
         setTipo("video");
         
         showInfoModal(
           "Video seleccionado 🎥", 
-          "El video está listo para subir. En producción se recomienda usar servicios como Cloudinary."
+          "El video está listo para subir. Nota: En producción se recomienda usar servicios de almacenamiento en la nube."
         );
       }
     } catch (error) {
@@ -291,15 +249,14 @@ const procesarYComprimirImagen = async (uri) => {
       let mensajeError = "Error al guardar el elemento";
       
       if (error.response) {
-        // Error del servidor
         mensajeError = error.response.data?.mensaje || mensajeError;
         
-        // Manejo específico de errores de longitud (por si acaso)
+        // Manejo específico de errores de longitud
         if (error.response.data?.mensaje?.includes('caracteres')) {
-          mensajeError = "La imagen es demasiado grande. Intenta con una imagen más pequeña.";
+          mensajeError = "La imagen es demasiado grande. Intenta seleccionar una imagen más pequeña o reducir la calidad.";
         }
       } else if (error.request) {
-        mensajeError = "No se pudo conectar con el servidor";
+        mensajeError = "No se pudo conectar con el servidor. Verifica tu conexión a internet.";
       }
       
       showInfoModal("Error ❌", mensajeError);
@@ -449,11 +406,11 @@ const procesarYComprimirImagen = async (uri) => {
           </TouchableOpacity>
         </View>
 
-        {/* Información mejorada */}
+        {/* Información para el usuario */}
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={20} color="#2196F3" />
           <Text style={styles.infoText}>
-            Las imágenes se comprimen automáticamente. Puedes subir fotos sin límite de tamaño.
+            💡 Consejo: Usa imágenes con calidad media (60%) para mejor rendimiento. El sistema ahora acepta imágenes de cualquier tamaño.
           </Text>
         </View>
 
@@ -528,16 +485,10 @@ const procesarYComprimirImagen = async (uri) => {
                       onPress={seleccionarImagen}
                       disabled={uploading}
                     >
-                      {uploading ? (
-                        <ActivityIndicator size="small" color={tipo === "imagen" ? "white" : "#424242"} />
-                      ) : (
-                        <>
-                          <Ionicons name="image" size={24} color={tipo === "imagen" ? "white" : "#424242"} />
-                          <Text style={[styles.fileButtonText, tipo === "imagen" && styles.fileButtonTextActive]}>
-                            Elegir Foto
-                          </Text>
-                        </>
-                      )}
+                      <Ionicons name="image" size={24} color={tipo === "imagen" ? "white" : "#424242"} />
+                      <Text style={[styles.fileButtonText, tipo === "imagen" && styles.fileButtonTextActive]}>
+                        Elegir Foto
+                      </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -669,7 +620,7 @@ const procesarYComprimirImagen = async (uri) => {
   );
 };
 
-// Los estilos se mantienen igual que en tu versión anterior
+// Los estilos se mantienen igual que antes
 const styles = StyleSheet.create({
   container: {
     flex: 1,
