@@ -1,6 +1,6 @@
 /* =========================================================
    screens/galeria/GestionGaleriaScreen.js
-   VERSIÓN ULTRA-COMPRIMIDA - Sin límites
+   VERSIÓN FINAL - SIN LÍMITES DE TAMAÑO
    ========================================================= */
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -101,7 +101,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
     setSelectedItem(null);
   };
 
-  // FUNCIÓN ULTRA-COMPRIMIDA
+  // FUNCIÓN SIN LÍMITES - Eliminar todas las validaciones de tamaño
   const seleccionarImagen = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -113,8 +113,8 @@ const GestionGaleriaScreen = ({ navigation }) => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [3, 4], // Menor relación para menos datos
-        quality: 0.3, // COMPRESIÓN MÁXIMA (30% calidad)
+        aspect: [4, 3],
+        quality: 0.8, // ✅ Calidad normal - SIN compresión extrema
         base64: true,
       });
 
@@ -124,24 +124,18 @@ const GestionGaleriaScreen = ({ navigation }) => {
         if (asset.base64) {
           const base64Image = `data:image/jpeg;base64,${asset.base64}`;
           
-          console.log("📊 DEBUG Frontend - Imagen seleccionada:");
+          console.log("📊 DEBUG - Imagen seleccionada SIN LÍMITES:");
           console.log("Longitud base64:", base64Image.length);
-          console.log("Primeros 100 chars:", base64Image.substring(0, 100) + "...");
+          console.log("Tamaño aproximado:", Math.round(base64Image.length * 0.75) / 1000, "KB");
           
-          // Verificar tamaño
-          if (base64Image.length > 100000) {
-            showInfoModal(
-              "Imagen muy grande ⚠️", 
-              `La imagen tiene ${base64Image.length} caracteres. Se recomienda usar una imagen más pequeña.`
-            );
-            return;
-          }
+          // ✅ ELIMINAR COMPLETAMENTE la validación de tamaño
+          // NO HAY MÁS LÍMITES - la base de datos acepta LONGTEXT (4GB)
           
           setArchivoSeleccionado(base64Image);
           setVistaPreviaUri(asset.uri);
           setTipo("imagen");
           
-          showInfoModal("Éxito ✅", "Imagen procesada y lista para subir");
+          showInfoModal("Éxito ✅", `Imagen lista para subir (${Math.round(base64Image.length / 1000)} KB)`);
         } else {
           showInfoModal("Error ❌", "No se pudo generar la imagen en base64");
         }
@@ -163,8 +157,8 @@ const GestionGaleriaScreen = ({ navigation }) => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Videos,
         allowsEditing: true,
-        quality: 0.7,
-        videoMaxDuration: 30, // Reducir a 30 segundos máximo
+        quality: 0.8,
+        videoMaxDuration: 120, // 2 minutos máximo
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
@@ -229,11 +223,10 @@ const GestionGaleriaScreen = ({ navigation }) => {
         activo,
       };
 
-      // ✅ DEBUG Frontend: Ver qué se envía
-      console.log("📤 DEBUG Frontend - Enviando datos:");
+      // ✅ DEBUG: Ver qué se envía (pero SIN validar tamaño)
+      console.log("📤 DEBUG - Enviando datos SIN LÍMITES:");
       console.log("URL length:", data.url.length);
-      console.log("Tipo:", data.tipo);
-      console.log("Título:", data.titulo);
+      console.log("Tamaño total:", Math.round(data.url.length * 0.75) / 1000, "KB");
 
       if (isEditing) {
         await axios.put(
@@ -255,18 +248,16 @@ const GestionGaleriaScreen = ({ navigation }) => {
       resetForm();
       fetchItems();
     } catch (error) {
-      console.error("❌ ERROR Frontend al guardar:", error);
-      
-      // ✅ DEBUG Frontend: Error completo
-      console.log("🔴 DEBUG Frontend - Error response:", error.response?.data);
+      console.error("❌ ERROR al guardar:", error);
       
       let mensajeError = "Error al guardar el elemento";
       
       if (error.response) {
         mensajeError = error.response.data?.mensaje || mensajeError;
         
+        // Si aún hay error de caracteres, es problema del backend
         if (error.response.data?.mensaje?.includes('caracteres')) {
-          mensajeError = `Problema de tamaño: ${error.response.data.mensaje}. Intenta con una imagen más pequeña.`;
+          mensajeError = `ERROR DEL SERVIDOR: ${error.response.data.mensaje}. Contacta al administrador.`;
         }
       } else if (error.request) {
         mensajeError = "No se pudo conectar con el servidor";
@@ -419,11 +410,11 @@ const GestionGaleriaScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Información */}
+        {/* Información actualizada */}
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={20} color="#2196F3" />
           <Text style={styles.infoText}>
-            💡 Las imágenes se comprimen automáticamente al 30% de calidad para mejor rendimiento.
+            💡 Ahora puedes subir imágenes y videos de cualquier tamaño. La base de datos acepta contenido ilimitado.
           </Text>
         </View>
 
@@ -633,7 +624,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
   );
 };
 
-// Los estilos se mantienen igual que antes
+// Los estilos se mantienen igual
 const styles = StyleSheet.create({
   container: {
     flex: 1,
