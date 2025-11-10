@@ -1,8 +1,8 @@
 /* =========================================================
    screens/galeria/GaleriaScreen.js
-   Pantalla principal de galería (vista para todos)
+   CON REPRODUCCIÓN DE VIDEOS
    ========================================================= */
-import React, { useState, useEffect, useCallback, useContext } from "react";
+import React, { useState, useEffect, useCallback, useContext, useRef } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { Video } from 'expo-av';  // ← IMPORTANTE: Agregar esto
 import { AuthContext } from "../../contexts/AuthContext";
 import Footer from "../../components/Footer";
 
@@ -31,13 +32,13 @@ const GaleriaScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [filtroTipo, setFiltroTipo] = useState("todos"); // todos, imagen, video
+  const [filtroTipo, setFiltroTipo] = useState("todos");
+  const videoRef = useRef(null);  // ← Para controlar el video
 
   const fetchGaleria = async () => {
     try {
       setLoading(true);
       
-      // Si es Cliente, usar endpoint público
       const endpoint =
         userRole === "Cliente"
           ? "https://vianney-server.onrender.com/galeria/public"
@@ -81,12 +82,12 @@ const GaleriaScreen = ({ navigation }) => {
   };
 
   const cerrarDetalle = () => {
+    // Pausar el video al cerrar
+    if (videoRef.current) {
+      videoRef.current.pauseAsync();
+    }
     setModalVisible(false);
     setSelectedItem(null);
-  };
-
-  const irAGestion = () => {
-    navigation.navigate("GestionGaleria");
   };
 
   const renderItem = (item) => {
@@ -203,11 +204,10 @@ const GaleriaScreen = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Botón de gestión solo para Admin y Barberos */}
           {(userRole === "Administrador" || userRole === "Barbero") && (
             <TouchableOpacity
               style={styles.botonGestion}
-              onPress={irAGestion}
+              onPress={() => navigation.navigate("GestionGaleria")}
               activeOpacity={0.7}
             >
               <Ionicons name="settings-outline" size={20} color="white" />
@@ -216,10 +216,8 @@ const GaleriaScreen = ({ navigation }) => {
           )}
         </View>
 
-        {/* Filtros */}
         {renderFiltros()}
 
-        {/* Contenido */}
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#424242" />
@@ -230,7 +228,10 @@ const GaleriaScreen = ({ navigation }) => {
             <Ionicons name="images-outline" size={80} color="#ccc" />
             <Text style={styles.emptyText}>No hay elementos en la galería</Text>
             {(userRole === "Administrador" || userRole === "Barbero") && (
-              <TouchableOpacity style={styles.emptyButton} onPress={irAGestion}>
+              <TouchableOpacity 
+                style={styles.emptyButton} 
+                onPress={() => navigation.navigate("GestionGaleria")}
+              >
                 <Text style={styles.emptyButtonText}>Agregar contenido</Text>
               </TouchableOpacity>
             )}
@@ -245,7 +246,7 @@ const GaleriaScreen = ({ navigation }) => {
         )}
       </View>
 
-      {/* Modal de detalle */}
+      {/* Modal de detalle CON VIDEO */}
       <Modal
         visible={modalVisible}
         animationType="fade"
@@ -267,20 +268,19 @@ const GaleriaScreen = ({ navigation }) => {
                     resizeMode="contain"
                   />
                 ) : (
-                  <View style={styles.videoPreview}>
-                    <Image
-                      source={{
-                        uri: selectedItem.miniatura || selectedItem.url,
-                      }}
-                      style={styles.modalImage}
+                  // ✅ REPRODUCTOR DE VIDEO REAL
+                  <View style={styles.videoContainer}>
+                    <Video
+                      ref={videoRef}
+                      source={{ uri: selectedItem.url }}
+                      style={styles.video}
+                      useNativeControls
                       resizeMode="contain"
+                      shouldPlay={false}
+                      onError={(error) => {
+                        console.error("Error al reproducir video:", error);
+                      }}
                     />
-                    <View style={styles.videoOverlayLarge}>
-                      <Ionicons name="play-circle" size={80} color="white" />
-                      <Text style={styles.videoText}>
-                        Video no reproducible en esta vista
-                      </Text>
-                    </View>
                   </View>
                 )}
 
@@ -291,7 +291,7 @@ const GaleriaScreen = ({ navigation }) => {
                       {selectedItem.descripcion}
                     </Text>
                   )}
-                  {selectedItem.etiquetas && (
+                  {selectedItem.etiquetas && Array.isArray(selectedItem.etiquetas) && (
                     <View style={styles.etiquetasContainer}>
                       {selectedItem.etiquetas.map((etiqueta, index) => (
                         <View key={index} style={styles.etiqueta}>
@@ -502,23 +502,15 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 400,
   },
-  videoPreview: {
-    position: "relative",
+  // ✅ NUEVOS ESTILOS PARA VIDEO
+  videoContainer: {
+    width: "100%",
+    height: 400,
+    backgroundColor: "#000",
   },
-  videoOverlayLarge: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  videoText: {
-    color: "white",
-    marginTop: 10,
-    fontSize: 14,
+  video: {
+    width: "100%",
+    height: "100%",
   },
   modalInfo: {
     marginTop: 20,
