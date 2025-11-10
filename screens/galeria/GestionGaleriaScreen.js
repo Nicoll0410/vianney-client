@@ -1,6 +1,6 @@
 /* =========================================================
    screens/galeria/GestionGaleriaScreen.js
-   VERSIÓN CORREGIDA - Con soporte para videos
+   VERSIÓN CORREGIDA - Mejor manejo de autenticación
    ========================================================= */
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -26,7 +26,6 @@ import * as ImagePicker from "expo-image-picker";
 import Footer from "../../components/Footer";
 import ConfirmarModal from "../../components/ConfirmarModal";
 import InfoModal from "../../components/InfoModal";
-import VideoPlayer from "../../components/VideoPlayer";
 
 const { width } = Dimensions.get("window");
 const isMobile = width < 768;
@@ -116,6 +115,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
     setSelectedItem(null);
   };
 
+  // FUNCIÓN SIN LÍMITES
   const seleccionarImagen = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -142,6 +142,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
           console.log("Longitud base64:", base64Image.length);
           console.log("Tamaño aproximado:", Math.round(base64Image.length * 0.75) / 1000, "KB");
           
+          // ✅ SIN VALIDACIÓN DE TAMAÑO
           setArchivoSeleccionado(base64Image);
           setVistaPreviaUri(asset.uri);
           setTipo("imagen");
@@ -330,21 +331,11 @@ const GestionGaleriaScreen = ({ navigation }) => {
     return (
       <View style={styles.card}>
         <View style={styles.cardImageContainer}>
-          {esVideo ? (
-            // ✅ Usar VideoPlayer para videos en la vista de gestión
-            <VideoPlayer
-              uri={item.url}
-              style={styles.cardImage}
-              showControls={false}
-            />
-          ) : (
-            <Image
-              source={{ uri: urlMostrar }}
-              style={styles.cardImage}
-              resizeMode="cover"
-            />
-          )}
-          
+          <Image
+            source={{ uri: urlMostrar }}
+            style={styles.cardImage}
+            resizeMode="cover"
+          />
           {esVideo && (
             <View style={styles.videoIndicator}>
               <Ionicons name="videocam" size={20} color="white" />
@@ -528,26 +519,11 @@ const GestionGaleriaScreen = ({ navigation }) => {
 
                   {vistaPreviaUri && (
                     <View style={styles.previewContainer}>
-                      {tipo === "video" ? (
-                        // ✅ Vista previa mejorada para videos
-                        <View style={styles.videoPreview}>
-                          <VideoPlayer
-                            uri={vistaPreviaUri}
-                            style={styles.previewImage}
-                            showControls={false}
-                          />
-                          <View style={styles.videoPreviewOverlay}>
-                            <Ionicons name="play-circle" size={40} color="white" />
-                            <Text style={styles.videoPreviewText}>Vista previa del video</Text>
-                          </View>
-                        </View>
-                      ) : (
-                        <Image
-                          source={{ uri: vistaPreviaUri }}
-                          style={styles.previewImage}
-                          resizeMode="cover"
-                        />
-                      )}
+                      <Image
+                        source={{ uri: vistaPreviaUri }}
+                        style={styles.previewImage}
+                        resizeMode="cover"
+                      />
                       <TouchableOpacity
                         style={styles.removePreviewButton}
                         onPress={() => {
@@ -653,6 +629,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
   );
 };
 
+// Los estilos se mantienen igual
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -946,24 +923,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 200,
     borderRadius: 8,
-  },
-  videoPreview: {
-    position: "relative",
-  },
-  videoPreviewOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.3)",
-  },
-  videoPreviewText: {
-    color: "white",
-    marginTop: 8,
-    fontSize: 12,
   },
   removePreviewButton: {
     position: "absolute",

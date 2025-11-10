@@ -1,6 +1,6 @@
 /* =========================================================
    screens/galeria/GaleriaScreen.js
-   Pantalla principal de galería (vista para todos) - VERSIÓN CORREGIDA
+   Pantalla principal de galería (vista para todos)
    ========================================================= */
 import React, { useState, useEffect, useCallback, useContext } from "react";
 import {
@@ -21,7 +21,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { AuthContext } from "../../contexts/AuthContext";
 import Footer from "../../components/Footer";
-import VideoPlayer from "../../components/VideoPlayer";
 
 const { width } = Dimensions.get("window");
 const isMobile = width < 768;
@@ -246,7 +245,7 @@ const GaleriaScreen = ({ navigation }) => {
         )}
       </View>
 
-      {/* Modal de detalle CORREGIDO */}
+      {/* Modal de detalle */}
       <Modal
         visible={modalVisible}
         animationType="fade"
@@ -268,13 +267,20 @@ const GaleriaScreen = ({ navigation }) => {
                     resizeMode="contain"
                   />
                 ) : (
-                  // ✅ REPRODUCTOR DE VIDEO FUNCIONAL
-                  <View style={styles.videoContainer}>
-                    <VideoPlayer
-                      uri={selectedItem.url}
-                      style={styles.videoPlayer}
-                      showControls={true}
+                  <View style={styles.videoPreview}>
+                    <Image
+                      source={{
+                        uri: selectedItem.miniatura || selectedItem.url,
+                      }}
+                      style={styles.modalImage}
+                      resizeMode="contain"
                     />
+                    <View style={styles.videoOverlayLarge}>
+                      <Ionicons name="play-circle" size={80} color="white" />
+                      <Text style={styles.videoText}>
+                        Video no reproducible en esta vista
+                      </Text>
+                    </View>
                   </View>
                 )}
 
@@ -496,17 +502,23 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 400,
   },
-  // ✅ NUEVOS ESTILOS PARA VIDEO
-  videoContainer: {
-    width: "100%",
-    height: 400,
-    backgroundColor: "#000",
-    borderRadius: 8,
-    overflow: "hidden",
+  videoPreview: {
+    position: "relative",
   },
-  videoPlayer: {
-    width: "100%",
-    height: "100%",
+  videoOverlayLarge: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  videoText: {
+    color: "white",
+    marginTop: 10,
+    fontSize: 14,
   },
   modalInfo: {
     marginTop: 20,
