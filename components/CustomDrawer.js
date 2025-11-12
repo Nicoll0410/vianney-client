@@ -73,16 +73,16 @@ const CustomDrawer = (props) => {
 
   /* Estado para secciones colapsables */
   const [expanded, setExpanded] = useState({
-    Usuarios: false,
-    Compras: false,
-    Ventas:  false,
+    Usuarios: true,
+    Compras: true,
+    Ventas:  true,
   });
   const toggle = (sec) => setExpanded((p) => ({ ...p, [sec]: !p[sec] }));
 
   /* Renderiza un ítem normal */
   const Item = ({ label, screen, icon: IconComp, name, indent = 0 }) => (
     <TouchableOpacity
-      style={[styles.menuItem, indent && { paddingLeft: 20 + indent }]}
+      style={[styles.menuItem, indent && { paddingLeft: 40 }]}
       onPress={() => {
         props.navigation.navigate(screen);
         if (props.navigation.closeDrawer) {
@@ -90,56 +90,53 @@ const CustomDrawer = (props) => {
         }
       }}
     >
-      <View style={[styles.iconContainer, indent && styles.subIconContainer]}>
-        <IconComp name={name} size={indent ? 16 : 20} color="#fff" />
-      </View>
+      <IconComp name={name} size={20} color="#666" />
       <Text style={[styles.menuText, indent && styles.subMenuText]}>{label}</Text>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      {/* ----------- Logo superior ------------ */}
-      <View style={styles.logoContainer}>
+      {/* ----------- Header con Logo ------------ */}
+      <View style={styles.header}>
         <Image source={require("../assets/images/vianney.jpg")} style={styles.logo} />
-        <Text style={styles.logoTitle}>New York Barber</Text>
+        <Text style={styles.headerTitle}>New York Barber</Text>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
       >
-        {/* Sección Menú */}
+        {/* Sección Menu */}
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>Menu</Text>
           
-          {config.topItems.map((item) => <Item key={item.label} {...item} />)}
+          {/* Dashboard siempre visible */}
+          {config.topItems.map((item) => (
+            <Item key={item.label} {...item} />
+          ))}
 
+          {/* Secciones expandibles */}
           {Object.entries(config.sections).map(([section, items]) => (
             <View key={section} style={styles.sectionContainer}>
               <TouchableOpacity 
-                style={styles.expandableItem} 
+                style={styles.sectionHeader}
                 onPress={() => toggle(section)}
                 activeOpacity={0.7}
               >
-                <View style={styles.menuRow}>
-                  <View style={styles.sectionIconContainer}>
-                    {section === "Usuarios" && <Feather name="users" size={20} color="#fff" />}
-                    {section === "Compras" && <AntDesign name="shoppingcart" size={20} color="#fff" />}
-                    {section === "Ventas"   && <MaterialCommunityIcons name="account-cash-outline" size={20} color="#fff" />}
-                  </View>
-                  <Text style={styles.sectionText}>{section}</Text>
-                </View>
+                <Text style={styles.sectionHeaderText}>{section}</Text>
                 <Feather 
                   name={expanded[section] ? "chevron-up" : "chevron-down"} 
                   size={18} 
-                  color="#fff" 
+                  color="#666" 
                 />
               </TouchableOpacity>
 
               {expanded[section] && (
                 <View style={styles.subItemsContainer}>
-                  {items.map((sub) => <Item key={sub.label} {...sub} indent={20} />)}
+                  {items.map((sub) => (
+                    <Item key={sub.label} {...sub} indent={20} />
+                  ))}
                 </View>
               )}
             </View>
@@ -147,29 +144,34 @@ const CustomDrawer = (props) => {
         </View>
       </ScrollView>
 
-      {/* ------------- Perfil abajo ------------- */}
+      {/* ------------- Perfil Section ------------- */}
       <View style={styles.profileSection}>
-        <Text style={styles.profileTitle}>Perfil</Text>
-        <View style={styles.userContainer}>
-          {user?.imagen ? (
-            <Image source={{ uri: user.imagen }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Feather name="user" size={20} color="#fff" />
-            </View>
-          )}
-
-          <View style={styles.userInfoContainer}>
-            <Text style={styles.userName}>
-              {user?.nombre || user?.email?.split("@")[0] || "Usuario"}
+        <View style={styles.profileHeader}>
+          <Text style={styles.profileTitle}>Perfil</Text>
+        </View>
+        
+        <View style={styles.userInfo}>
+          <View style={styles.avatarContainer}>
+            {user?.imagen ? (
+              <Image source={{ uri: user.imagen }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Feather name="user" size={20} color="#666" />
+              </View>
+            )}
+          </View>
+          
+          <View style={styles.userDetails}>
+            <Text style={styles.username}>
+              {user?.nombre || user?.email?.split("@")[0] || "nybarber2025"}
             </Text>
             <Text style={styles.userEmail}>
-              {user?.email || "ejemplo@dominio.com"}
+              {user?.email || "nybarber2025@gmail.com"}
             </Text>
             <Text style={styles.userRole}>{roleKey}</Text>
           </View>
         </View>
-        
+
         {/* Botón Cerrar sesión */}
         <TouchableOpacity style={styles.logoutButton} onPress={logout}>
           <Feather name="log-out" size={16} color="#fff" />
@@ -184,30 +186,32 @@ const CustomDrawer = (props) => {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: "#1a1a1a" 
+    backgroundColor: "#fff" 
   },
   scrollContainer: { 
     flexGrow: 1 
   },
-  logoContainer: { 
-    alignItems: "center", 
-    paddingVertical: 25, 
+  header: {
+    alignItems: "center",
+    paddingVertical: 30,
     paddingHorizontal: 20,
-    backgroundColor: "#000",
-    borderBottomWidth: 1, 
-    borderColor: "#333" 
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderColor: "#e0e0e0"
   },
-  logo: { 
-    width: 80, 
-    height: 80, 
-    resizeMode: "contain",
+  logo: {
+    width: 80,
+    height: 80,
+    resizeMode: "cover",
     borderRadius: 40,
-    marginBottom: 12
+    marginBottom: 15,
+    borderWidth: 2,
+    borderColor: "#e0e0e0"
   },
-  logoTitle: {
-    color: "#fff",
-    fontSize: 18,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: "bold",
+    color: "#000",
     textAlign: "center"
   },
   menuSection: {
@@ -216,117 +220,100 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#000",
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: "#2a2a2a",
-    marginBottom: 5
+    backgroundColor: "#f8f8f8"
   },
   sectionContainer: {
-    marginBottom: 5,
+    marginBottom: 1,
   },
-  expandableItem: {
+  sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 15,
     paddingHorizontal: 20,
-    backgroundColor: "#2a2a2a",
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderColor: "#333"
+    borderColor: "#f0f0f0"
   },
-  menuRow: {
-    flexDirection: "row",
-    alignItems: "center"
-  },
-  sectionIconContainer: {
-    width: 24,
-    alignItems: "center",
-    marginRight: 12
-  },
-  sectionText: {
+  sectionHeaderText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#fff"
+    color: "#000"
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
-    paddingLeft: 20,
-    backgroundColor: "#2a2a2a",
-    borderBottomWidth: 1,
-    borderColor: "#333"
-  },
-  iconContainer: {
-    width: 24,
-    alignItems: "center",
-    marginRight: 12
-  },
-  subIconContainer: {
-    width: 20,
-    marginRight: 8
+    paddingHorizontal: 20,
+    backgroundColor: "#fff"
   },
   menuText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#fff"
+    color: "#000",
+    marginLeft: 15
   },
   subMenuText: {
-    fontSize: 13,
-    color: "#e0e0e0"
+    fontSize: 14,
+    color: "#666"
   },
   subItemsContainer: {
-    backgroundColor: "#222"
+    backgroundColor: "#fafafa"
   },
   profileSection: {
     padding: 20,
-    backgroundColor: "#000",
+    backgroundColor: "#fff",
     borderTopWidth: 1,
-    borderColor: "#333"
+    borderColor: "#e0e0e0"
+  },
+  profileHeader: {
+    marginBottom: 15
   },
   profileTitle: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 15
+    color: "#000"
   },
-  userContainer: {
+  userInfo: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 20
+  },
+  avatarContainer: {
+    marginRight: 12
   },
   avatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    marginRight: 12,
     borderWidth: 2,
-    borderColor: "#444"
+    borderColor: "#e0e0e0"
   },
   avatarPlaceholder: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#333",
+    backgroundColor: "#f0f0f0",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
     borderWidth: 2,
-    borderColor: "#444"
+    borderColor: "#e0e0e0"
   },
-  userInfoContainer: {
+  userDetails: {
     flex: 1
   },
-  userName: {
-    color: "#fff",
+  username: {
+    color: "#000",
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 2
   },
   userEmail: {
-    color: "#aaa",
-    fontSize: 13,
+    color: "#666",
+    fontSize: 14,
     marginBottom: 2
   },
   userRole: {
@@ -336,20 +323,18 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     flexDirection: "row",
-    backgroundColor: "#d4af37",
+    backgroundColor: "#000",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#b8941f"
+    justifyContent: "center"
   },
   logoutText: {
-    color: "#000",
+    color: "#fff",
     marginLeft: 8,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "600"
   }
 });
 
