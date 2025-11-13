@@ -1,6 +1,6 @@
 /* =========================================================
    screens/galeria/DetalleBarberoGaleriaScreen.js
-   PANTALLA DETALLE - Muestra todas las fotos y videos de un barbero
+   PANTALLA DETALLE - Muestra todas las fotos y videos de un barbero ejemplo1
    ========================================================= */
 import React, { useState, useEffect } from "react";
 import {
