@@ -1,6 +1,6 @@
 /* =========================================================
    screens/galeria/GestionGaleriaScreen.js
-   CON SELECTOR DE BARBERO Y OPCIÓN DE DESTACAR
+   VERSIÓN SIN @react-native-picker/picker
    ========================================================= */
 import React, { useState, useEffect, useCallback, useContext } from "react";
 import {
@@ -21,7 +21,6 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
-import { Picker } from "@react-native-picker/picker";
 import Footer from "../../components/Footer";
 import ConfirmarModal from "../../components/ConfirmarModal";
 import InfoModal from "../../components/InfoModal";
@@ -50,6 +49,9 @@ const GestionGaleriaScreen = ({ navigation }) => {
   const [barberoSeleccionado, setBarberoSeleccionado] = useState("");
   const [esDestacada, setEsDestacada] = useState(false);
   
+  // Modal para selector de barbero
+  const [showBarberoPicker, setShowBarberoPicker] = useState(false);
+  
   // Modals
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -66,7 +68,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
     }
   };
 
-  // Fetch barberos para el selector
   const fetchBarberos = async () => {
     try {
       const token = await getToken();
@@ -78,7 +79,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
       if (response.data) {
         setBarberos(response.data);
         
-        // Si es barbero, auto-seleccionar su ID
         if (userRole === "Barbero" && barberData?.id) {
           setBarberoSeleccionado(barberData.id);
         }
@@ -94,7 +94,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
       const token = await getToken();
       
       const params = {};
-      // Si es barbero, solo mostrar sus items
       if (userRole === "Barbero" && barberData?.id) {
         params.barberoID = barberData.id;
       }
@@ -145,7 +144,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
     setIsEditing(false);
     setSelectedItem(null);
     
-    // Si es barbero, auto-seleccionar su ID
     if (userRole === "Barbero" && barberData?.id) {
       setBarberoSeleccionado(barberData.id);
     } else {
@@ -387,7 +385,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.cardContent}>
-          {/* Barbero */}
           <View style={styles.barberoInfo}>
             <Image
               source={
@@ -531,28 +528,29 @@ const GestionGaleriaScreen = ({ navigation }) => {
               </View>
 
               <ScrollView contentContainerStyle={styles.formContainer}>
-                {/* Selector de barbero */}
+                {/* Selector de barbero personalizado */}
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>
                     Barbero <Text style={styles.required}>*</Text>
                   </Text>
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={barberoSeleccionado}
-                      onValueChange={(value) => setBarberoSeleccionado(value)}
-                      enabled={userRole === "Administrador"}
-                      style={styles.picker}
-                    >
-                      <Picker.Item label="Selecciona un barbero" value="" />
-                      {barberos.map((barbero) => (
-                        <Picker.Item
-                          key={barbero.id}
-                          label={barbero.nombre}
-                          value={barbero.id}
-                        />
-                      ))}
-                    </Picker>
-                  </View>
+                  
+                  <TouchableOpacity
+                    style={styles.customPickerButton}
+                    onPress={() => {
+                      if (userRole === "Administrador") {
+                        setShowBarberoPicker(true);
+                      }
+                    }}
+                    disabled={userRole !== "Administrador"}
+                  >
+                    <Text style={styles.customPickerText}>
+                      {barberoSeleccionado
+                        ? barberos.find((b) => b.id === barberoSeleccionado)?.nombre || "Selecciona un barbero"
+                        : "Selecciona un barbero"}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="#666" />
+                  </TouchableOpacity>
+
                   {userRole === "Barbero" && (
                     <Text style={styles.helperText}>
                       Como barbero, solo puedes agregar a tu galería
@@ -708,6 +706,54 @@ const GestionGaleriaScreen = ({ navigation }) => {
                     </Text>
                   )}
                 </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Modal selector de barberos */}
+        <Modal
+          visible={showBarberoPicker}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setShowBarberoPicker(false)}
+        >
+          <View style={styles.pickerModalOverlay}>
+            <View style={styles.pickerModalContent}>
+              <View style={styles.pickerModalHeader}>
+                <Text style={styles.pickerModalTitle}>Seleccionar Barbero</Text>
+                <TouchableOpacity onPress={() => setShowBarberoPicker(false)}>
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView>
+                {barberos.map((barbero) => (
+                  <TouchableOpacity
+                    key={barbero.id}
+                    style={[
+                      styles.pickerOption,
+                      barberoSeleccionado === barbero.id && styles.pickerOptionSelected,
+                    ]}
+                    onPress={() => {
+                      setBarberoSeleccionado(barbero.id);
+                      setShowBarberoPicker(false);
+                    }}
+                  >
+                    <Image
+                      source={
+                        barbero.avatar
+                          ? { uri: barbero.avatar }
+                          : require("../../assets/avatar.png")
+                      }
+                      style={styles.pickerOptionAvatar}
+                    />
+                    <Text style={styles.pickerOptionText}>{barbero.nombre}</Text>
+                    {barberoSeleccionado === barbero.id && (
+                      <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+                    )}
+                  </TouchableOpacity>
+                ))}
               </ScrollView>
             </View>
           </View>
@@ -980,15 +1026,19 @@ const styles = StyleSheet.create({
   required: {
     color: "#d32f2f",
   },
-  pickerContainer: {
+  customPickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
+    padding: 12,
     backgroundColor: "#fafafa",
-    overflow: "hidden",
   },
-  picker: {
-    height: 50,
+  customPickerText: {
+    fontSize: 14,
+    color: "#333",
   },
   helperText: {
     fontSize: 12,
@@ -1104,6 +1154,52 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  // Estilos para el modal selector de barbero
+  pickerModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  pickerModalContent: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "70%",
+    paddingBottom: 20,
+  },
+  pickerModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  pickerModalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  pickerOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+    gap: 12,
+  },
+  pickerOptionSelected: {
+    backgroundColor: "#f0f9ff",
+  },
+  pickerOptionAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  pickerOptionText: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
   },
 });
 
