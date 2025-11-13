@@ -1,8 +1,8 @@
 /* =========================================================
    screens/galeria/GestionGaleriaScreen.js
-   VERSIÓN CORREGIDA - Mejor manejo de autenticación
+   CON SELECTOR DE BARBERO Y OPCIÓN DE DESTACAR
    ========================================================= */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useContext } from "react";
 import {
   View,
   Text,
@@ -11,27 +11,29 @@ import {
   FlatList,
   Image,
   Dimensions,
-  Alert,
   TextInput,
   Modal,
   ScrollView,
   ActivityIndicator,
-  Platform,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
+import { Picker } from "@react-native-picker/picker";
 import Footer from "../../components/Footer";
 import ConfirmarModal from "../../components/ConfirmarModal";
 import InfoModal from "../../components/InfoModal";
+import { AuthContext } from "../../contexts/AuthContext";
 
 const { width } = Dimensions.get("window");
 const isMobile = width < 768;
 
 const GestionGaleriaScreen = ({ navigation }) => {
+  const { user, userRole, barberData } = useContext(AuthContext);
   const [items, setItems] = useState([]);
+  const [barberos, setBarberos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -45,6 +47,8 @@ const GestionGaleriaScreen = ({ navigation }) => {
   const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
   const [vistaPreviaUri, setVistaPreviaUri] = useState(null);
   const [activo, setActivo] = useState(true);
+  const [barberoSeleccionado, setBarberoSeleccionado] = useState("");
+  const [esDestacada, setEsDestacada] = useState(false);
   
   // Modals
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -52,7 +56,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
   const [infoModalVisible, setInfoModalVisible] = useState(false);
   const [infoModalMessage, setInfoModalMessage] = useState({});
 
-  // Función mejorada para obtener token
   const getToken = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -63,19 +66,45 @@ const GestionGaleriaScreen = ({ navigation }) => {
     }
   };
 
+  // Fetch barberos para el selector
+  const fetchBarberos = async () => {
+    try {
+      const token = await getToken();
+      const response = await axios.get(
+        "https://vianney-server.onrender.com/barberos",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data) {
+        setBarberos(response.data);
+        
+        // Si es barbero, auto-seleccionar su ID
+        if (userRole === "Barbero" && barberData?.id) {
+          setBarberoSeleccionado(barberData.id);
+        }
+      }
+    } catch (error) {
+      console.error("Error al cargar barberos:", error);
+    }
+  };
+
   const fetchItems = async () => {
     try {
       setLoading(true);
       const token = await getToken();
       
-      const headers = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
+      const params = {};
+      // Si es barbero, solo mostrar sus items
+      if (userRole === "Barbero" && barberData?.id) {
+        params.barberoID = barberData.id;
       }
       
       const response = await axios.get(
         "https://vianney-server.onrender.com/galeria",
-        { headers }
+        { 
+          headers: { Authorization: `Bearer ${token}` },
+          params
+        }
       );
 
       if (response.data.success) {
@@ -90,6 +119,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
   };
 
   useEffect(() => {
+    fetchBarberos();
     fetchItems();
   }, []);
 
@@ -111,16 +141,23 @@ const GestionGaleriaScreen = ({ navigation }) => {
     setArchivoSeleccionado(null);
     setVistaPreviaUri(null);
     setActivo(true);
+    setEsDestacada(false);
     setIsEditing(false);
     setSelectedItem(null);
+    
+    // Si es barbero, auto-seleccionar su ID
+    if (userRole === "Barbero" && barberData?.id) {
+      setBarberoSeleccionado(barberData.id);
+    } else {
+      setBarberoSeleccionado("");
+    }
   };
 
-  // FUNCIÓN SIN LÍMITES
   const seleccionarImagen = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería.');
+        showInfoModal("Permisos necesarios", "Necesitamos acceso a tu galería.");
         return;
       }
 
@@ -137,19 +174,10 @@ const GestionGaleriaScreen = ({ navigation }) => {
         
         if (asset.base64) {
           const base64Image = `data:image/jpeg;base64,${asset.base64}`;
-          
-          console.log("📊 Imagen seleccionada:");
-          console.log("Longitud base64:", base64Image.length);
-          console.log("Tamaño aproximado:", Math.round(base64Image.length * 0.75) / 1000, "KB");
-          
-          // ✅ SIN VALIDACIÓN DE TAMAÑO
           setArchivoSeleccionado(base64Image);
           setVistaPreviaUri(asset.uri);
           setTipo("imagen");
-          
-          showInfoModal("Éxito ✅", `Imagen lista para subir (${Math.round(base64Image.length / 1000)} KB)`);
-        } else {
-          showInfoModal("Error ❌", "No se pudo generar la imagen en base64");
+          showInfoModal("Éxito ✅", `Imagen lista para subir`);
         }
       }
     } catch (error) {
@@ -162,7 +190,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permisos necesarios', 'Necesitamos acceso a tus videos.');
+        showInfoModal("Permisos necesarios", "Necesitamos acceso a tus videos.");
         return;
       }
 
@@ -175,11 +203,9 @@ const GestionGaleriaScreen = ({ navigation }) => {
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
-        
         setArchivoSeleccionado(asset.uri);
         setVistaPreviaUri(asset.uri);
         setTipo("video");
-        
         showInfoModal("Video seleccionado 🎥", "El video está listo para subir.");
       }
     } catch (error) {
@@ -201,6 +227,8 @@ const GestionGaleriaScreen = ({ navigation }) => {
     setArchivoSeleccionado(item.url);
     setVistaPreviaUri(item.url);
     setActivo(item.activo);
+    setBarberoSeleccionado(item.barberoID);
+    setEsDestacada(item.esDestacada || false);
     setIsEditing(true);
     setModalVisible(true);
   };
@@ -208,6 +236,11 @@ const GestionGaleriaScreen = ({ navigation }) => {
   const handleSubmit = async () => {
     if (!titulo.trim()) {
       showInfoModal("Error ❌", "El título es obligatorio");
+      return;
+    }
+
+    if (!barberoSeleccionado) {
+      showInfoModal("Error ❌", "Debes seleccionar un barbero");
       return;
     }
 
@@ -228,15 +261,11 @@ const GestionGaleriaScreen = ({ navigation }) => {
         miniatura: tipo === "imagen" ? archivoSeleccionado : null,
         orden: items.length,
         activo,
+        barberoID: barberoSeleccionado,
+        esDestacada,
       };
 
-      console.log("📤 Enviando datos:");
-      console.log("URL length:", data.url.length);
-
-      const headers = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
+      const headers = { Authorization: `Bearer ${token}` };
 
       if (isEditing) {
         await axios.put(
@@ -259,16 +288,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
       fetchItems();
     } catch (error) {
       console.error("❌ ERROR al guardar:", error);
-      
-      let mensajeError = "Error al guardar el elemento";
-      
-      if (error.response) {
-        mensajeError = error.response.data?.mensaje || mensajeError;
-      } else if (error.request) {
-        mensajeError = "No se pudo conectar con el servidor";
-      }
-      
-      showInfoModal("Error ❌", mensajeError);
+      showInfoModal("Error ❌", error.response?.data?.mensaje || "Error al guardar");
     } finally {
       setUploading(false);
     }
@@ -282,15 +302,9 @@ const GestionGaleriaScreen = ({ navigation }) => {
   const handleDelete = async () => {
     try {
       const token = await getToken();
-      
-      const headers = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
       await axios.delete(
         `https://vianney-server.onrender.com/galeria/${itemToDelete}`,
-        { headers }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       setShowConfirmModal(false);
@@ -305,28 +319,35 @@ const GestionGaleriaScreen = ({ navigation }) => {
   const toggleActivo = async (item) => {
     try {
       const token = await getToken();
-      
-      const headers = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
       await axios.patch(
         `https://vianney-server.onrender.com/galeria/${item.id}/toggle-activo`,
         {},
-        { headers }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
       fetchItems();
     } catch (error) {
       console.error("Error al cambiar estado:", error);
-      showInfoModal("Error ❌", "Error al cambiar el estado");
+    }
+  };
+
+  const toggleDestacada = async (item) => {
+    try {
+      const token = await getToken();
+      await axios.patch(
+        `https://vianney-server.onrender.com/galeria/${item.id}/toggle-destacada`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchItems();
+    } catch (error) {
+      console.error("Error al cambiar destacada:", error);
     }
   };
 
   const renderItem = ({ item, index }) => {
     const esVideo = item.tipo === "video";
     const urlMostrar = esVideo && item.miniatura ? item.miniatura : item.url;
+    const barbero = barberos.find(b => b.id === item.barberoID);
 
     return (
       <View style={styles.card}>
@@ -342,6 +363,16 @@ const GestionGaleriaScreen = ({ navigation }) => {
             </View>
           )}
           
+          {item.esDestacada && (
+            <TouchableOpacity
+              style={styles.destacadaBadge}
+              onPress={() => toggleDestacada(item)}
+            >
+              <Ionicons name="star" size={16} color="#FFD700" />
+              <Text style={styles.destacadaTexto}>Destacada</Text>
+            </TouchableOpacity>
+          )}
+          
           <TouchableOpacity
             style={[
               styles.statusBadge,
@@ -353,13 +384,22 @@ const GestionGaleriaScreen = ({ navigation }) => {
               {item.activo ? "Visible" : "Oculto"}
             </Text>
           </TouchableOpacity>
-          
-          <View style={styles.positionBadge}>
-            <Text style={styles.positionText}>#{index + 1}</Text>
-          </View>
         </View>
 
         <View style={styles.cardContent}>
+          {/* Barbero */}
+          <View style={styles.barberoInfo}>
+            <Image
+              source={
+                barbero?.avatar
+                  ? { uri: barbero.avatar }
+                  : require("../../assets/avatar.png")
+              }
+              style={styles.barberoAvatar}
+            />
+            <Text style={styles.barberoNombre}>{barbero?.nombre || "Barbero"}</Text>
+          </View>
+
           <Text style={styles.cardTitle} numberOfLines={2}>
             {item.titulo}
           </Text>
@@ -368,14 +408,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
               {item.descripcion}
             </Text>
           )}
-          <View style={styles.cardMeta}>
-            <Text style={styles.cardMetaText}>
-              {item.tipo === "imagen" ? "📷 Foto" : "🎥 Video"}
-            </Text>
-            <Text style={styles.cardMetaText}>
-              {item.activo ? "Los clientes lo ven" : "Solo tú lo ves"}
-            </Text>
-          </View>
         </View>
 
         <View style={styles.cardActions}>
@@ -386,6 +418,19 @@ const GestionGaleriaScreen = ({ navigation }) => {
             <Ionicons name="pencil" size={20} color="#424242" />
             <Text style={styles.actionButtonText}>Editar</Text>
           </TouchableOpacity>
+          
+          {!item.esDestacada && (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => toggleDestacada(item)}
+            >
+              <Ionicons name="star-outline" size={20} color="#FFD700" />
+              <Text style={[styles.actionButtonText, { color: "#FFD700" }]}>
+                Destacar
+              </Text>
+            </TouchableOpacity>
+          )}
+          
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => handleDeleteConfirmation(item.id)}
@@ -426,7 +471,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={20} color="#2196F3" />
           <Text style={styles.infoText}>
-            💡 Ahora puedes subir imágenes y videos de cualquier tamaño sin límites.
+            💡 Marca una imagen como "Destacada" para que aparezca en la tarjeta principal del barbero
           </Text>
         </View>
 
@@ -440,9 +485,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
             <Ionicons name="images-outline" size={80} color="#ccc" />
             <Text style={styles.emptyText}>
               No hay elementos en la galería
-            </Text>
-            <Text style={styles.emptySubtext}>
-              Agrega fotos o videos para mostrar tu trabajo
             </Text>
             <TouchableOpacity
               style={styles.emptyButton}
@@ -462,6 +504,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
           />
         )}
 
+        {/* Modal de crear/editar */}
         <Modal
           visible={modalVisible}
           animationType="slide"
@@ -488,6 +531,36 @@ const GestionGaleriaScreen = ({ navigation }) => {
               </View>
 
               <ScrollView contentContainerStyle={styles.formContainer}>
+                {/* Selector de barbero */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>
+                    Barbero <Text style={styles.required}>*</Text>
+                  </Text>
+                  <View style={styles.pickerContainer}>
+                    <Picker
+                      selectedValue={barberoSeleccionado}
+                      onValueChange={(value) => setBarberoSeleccionado(value)}
+                      enabled={userRole === "Administrador"}
+                      style={styles.picker}
+                    >
+                      <Picker.Item label="Selecciona un barbero" value="" />
+                      {barberos.map((barbero) => (
+                        <Picker.Item
+                          key={barbero.id}
+                          label={barbero.nombre}
+                          value={barbero.id}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
+                  {userRole === "Barbero" && (
+                    <Text style={styles.helperText}>
+                      Como barbero, solo puedes agregar a tu galería
+                    </Text>
+                  )}
+                </View>
+
+                {/* Archivo */}
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>
                     Archivo <Text style={styles.required}>*</Text>
@@ -537,6 +610,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
                   )}
                 </View>
 
+                {/* Título */}
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>
                     Título <Text style={styles.required}>*</Text>
@@ -550,25 +624,56 @@ const GestionGaleriaScreen = ({ navigation }) => {
                   />
                 </View>
 
+                {/* Descripción */}
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Descripción (opcional)</Text>
                   <TextInput
                     style={[styles.input, styles.textArea]}
                     value={descripcion}
                     onChangeText={setDescripcion}
-                    placeholder="Describe el trabajo realizado, productos usados, etc."
+                    placeholder="Describe el trabajo realizado"
                     placeholderTextColor="#999"
                     multiline
                     numberOfLines={3}
                   />
                 </View>
 
+                {/* Switch Destacada */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>Visibilidad</Text>
                   <View style={styles.switchContainer}>
                     <View>
                       <Text style={styles.switchLabel}>
-                        {activo ? "✅ Visible para clientes" : "❌ Oculto (solo tú lo ves)"}
+                        ⭐ Marcar como destacada
+                      </Text>
+                      <Text style={styles.switchSubLabel}>
+                        Aparecerá en la tarjeta principal del barbero
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[
+                        styles.switch,
+                        esDestacada ? styles.switchActive : styles.switchInactive,
+                      ]}
+                      onPress={() => setEsDestacada(!esDestacada)}
+                    >
+                      <View
+                        style={[
+                          styles.switchThumb,
+                          esDestacada
+                            ? styles.switchThumbActive
+                            : styles.switchThumbInactive,
+                        ]}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Switch Visibilidad */}
+                <View style={styles.formGroup}>
+                  <View style={styles.switchContainer}>
+                    <View>
+                      <Text style={styles.switchLabel}>
+                        {activo ? "✅ Visible para clientes" : "❌ Oculto"}
                       </Text>
                     </View>
                     <TouchableOpacity
@@ -613,7 +718,7 @@ const GestionGaleriaScreen = ({ navigation }) => {
           onCancel={() => setShowConfirmModal(false)}
           onConfirm={handleDelete}
           title="¿Eliminar este elemento?"
-          message="Esta acción no se puede deshacer. El contenido se eliminará permanentemente."
+          message="Esta acción no se puede deshacer."
         />
 
         <InfoModal
@@ -629,7 +734,6 @@ const GestionGaleriaScreen = ({ navigation }) => {
   );
 };
 
-// Los estilos se mantienen igual
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -663,8 +767,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "#424242",
   },
   textoBoton: {
     marginLeft: 8,
@@ -706,13 +808,6 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 16,
     textAlign: "center",
-    fontWeight: "600",
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: "#999",
-    marginTop: 8,
-    textAlign: "center",
   },
   emptyButton: {
     marginTop: 20,
@@ -724,7 +819,6 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     color: "white",
     fontWeight: "600",
-    fontSize: 14,
   },
   listContainer: {
     paddingBottom: 16,
@@ -761,6 +855,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
+  destacadaBadge: {
+    position: "absolute",
+    bottom: 8,
+    left: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  destacadaTexto: {
+    color: "#FFD700",
+    fontSize: 11,
+    fontWeight: "600",
+  },
   statusBadge: {
     position: "absolute",
     top: 8,
@@ -780,22 +891,27 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
   },
-  positionBadge: {
-    position: "absolute",
-    bottom: 8,
-    left: 8,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  positionText: {
-    color: "white",
-    fontSize: 11,
-    fontWeight: "600",
-  },
   cardContent: {
     padding: 12,
+  },
+  barberoInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  barberoAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 8,
+  },
+  barberoNombre: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "500",
   },
   cardTitle: {
     fontSize: 14,
@@ -806,15 +922,6 @@ const styles = StyleSheet.create({
   cardDescription: {
     fontSize: 12,
     color: "#666",
-    marginBottom: 8,
-  },
-  cardMeta: {
-    flexDirection: "column",
-    gap: 4,
-  },
-  cardMetaText: {
-    fontSize: 11,
-    color: "#999",
   },
   cardActions: {
     flexDirection: "row",
@@ -873,6 +980,22 @@ const styles = StyleSheet.create({
   required: {
     color: "#d32f2f",
   },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    backgroundColor: "#fafafa",
+    overflow: "hidden",
+  },
+  picker: {
+    height: 50,
+  },
+  helperText: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
+    fontStyle: "italic",
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
@@ -903,7 +1026,6 @@ const styles = StyleSheet.create({
   },
   fileButtonActive: {
     backgroundColor: "#424242",
-    borderColor: "#424242",
   },
   fileButtonText: {
     fontSize: 14,
@@ -941,6 +1063,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     color: "#333",
+  },
+  switchSubLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 2,
   },
   switch: {
     width: 50,
