@@ -32,8 +32,9 @@ import MovimientosScreen from "../screens/movimientos/MovimientosScreen";
 import VentasScreen from "../screens/ventas/VentasScreen";
 import NotificacionesScreen from "../screens/agenda/NotificacionesScreen";
 import ControlInsumos from "../screens/insumos/ControlInsumos";
-import GaleriaScreen from "../screens/galeria/GaleriaScreen";
-import GestionGaleriaScreen from "../screens/galeria/GestionGaleriaScreen";
+import GaleriaBarberosScreen from '../screens/galeria/GaleriaBarberosScreen';
+import DetalleBarberoGaleriaScreen from '../screens/galeria/DetalleBarberoGaleriaScreen';
+import GestionGaleriaScreen from '../screens/galeria/GestionGaleriaScreen';
 
 const Stack = createStackNavigator();
 
@@ -213,20 +214,19 @@ const CustomDrawerNavigator = ({ navigation: mainNavigation }) => {
               })}
             />
             <Stack.Screen
-              name="Galeria"
-              component={GaleriaScreen}
-              options={({ navigation }) => ({
-                ...commonOptions({ navigation }),
-                headerTitle: "Galería",
-              })}
+              name="GaleriaBarberos"
+              component={GaleriaBarberosScreen}
+              options={{ title: 'Galería' }}
+            />
+            <Stack.Screen
+              name="DetalleBarberoGaleria"
+              component={DetalleBarberoGaleriaScreen}
+              options={{ title: 'Trabajos del Barbero' }}
             />
             <Stack.Screen
               name="GestionGaleria"
               component={GestionGaleriaScreen}
-              options={({ navigation }) => ({
-                ...commonOptions({ navigation }),
-                headerTitle: "Gestión de Galería",
-              })}
+              options={{ title: 'Gestionar Galería' }}
             />
             <Stack.Screen
               name="Movimientos"
